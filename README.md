@@ -28,7 +28,7 @@ A secure, enterprise-grade Python package for AI prompt optimization using the 4
 ### From PyPI (Recommended)
 
 ```bash
-pip install dmps==0.2.0
+pip install dmps==0.2.1
 ```
 
 ### From Source
@@ -241,4 +241,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**DMPS v0.2.0** - Enterprise-grade AI prompt optimization with comprehensive security and observability.
+**DMPS v0.2.1** - Enterprise-grade AI prompt optimization with comprehensive security and observability.
