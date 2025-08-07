@@ -27,7 +27,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
     "black",
-    "flake8", 
+    "flake8",
     "isort",
     "mypy",
     "pre-commit",
@@ -36,6 +36,11 @@ dev = [
     "safety",
     "autoflake",
     "autopep8"
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-mock>=3.10"
 ]
 
 [project.urls]
