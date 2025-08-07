@@ -15,16 +15,27 @@ A Python package for AI prompt optimization using the 4-D methodology (Deconstru
 
 ## Installation
 
+### From PyPI (Recommended)
+
+```bash
+pip install dmps
+```
+
+### From Source
+
+```bash
+# Clone the repository
+git clone https://github.com/MrBinnacle/dmps.git
+cd dmps
+
+# Install in development mode
+pip install -e .
+```
+
 ### Prerequisites
 
 - Python 3.8+
 - pip (Python package manager)
-
-### Using pip
-
-```bash
-pip install -e .
-```
 
 ### Development Installation
 
@@ -75,7 +86,17 @@ print(result.optimized_prompt)
 ### CLI Usage
 
 ```bash
+# After pip install dmps
+dmps "Your prompt here" --mode conversational --platform claude
+
+# Or using module syntax
 python -m dmps "Your prompt here" --mode conversational --platform claude
+
+# Interactive mode
+dmps --interactive
+
+# Help
+dmps --help
 ```
 
 ## Development
