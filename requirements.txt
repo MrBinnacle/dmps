@@ -2,7 +2,7 @@
 
 # Development dependencies
 black==24.1.1
-flake8==7.0.0
+ruff==0.1.15
 isort==5.13.2
 mypy==1.8.0
 pre-commit==3.6.0

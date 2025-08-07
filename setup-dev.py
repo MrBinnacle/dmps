@@ -10,7 +10,7 @@ def install_tools():
     """Install development tools"""
     tools = [
         "black",
-        "flake8",
+        "ruff",
         "isort",
         "mypy",
         "pre-commit",

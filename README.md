@@ -201,7 +201,7 @@ python -m pytest tests/ -v
 # Automated formatting and linting
 black src/
 isort src/
-flake8 src/
+ruff check src/
 mypy src/
 
 # Security scanning

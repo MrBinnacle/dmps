@@ -39,7 +39,7 @@ def main():
     # Check commands (report issues)
     check_commands = [
         (
-            "python -m flake8 src/ --max-line-length=88 --extend-ignore=E203,W503",
+            "python -m ruff check src/",
             "Linting",
         ),
         ("python -m mypy src/ --ignore-missing-imports", "Type checking"),

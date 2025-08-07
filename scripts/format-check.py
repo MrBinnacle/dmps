@@ -4,7 +4,6 @@ Format checker script to run before commits
 """
 import subprocess
 import sys
-from pathlib import Path
 
 
 def run_command(cmd, description):
@@ -22,14 +21,12 @@ def run_command(cmd, description):
 
 def main():
     """Run all formatting checks"""
-    root = Path(__file__).parent.parent
-
     checks = [
         ("python -m black --check src/", "Black formatting check"),
         ("python -m isort --check-only src/", "Import sorting check"),
         (
-            "python -m flake8 src/ --max-line-length=88 --extend-ignore=E203,W503",
-            "Flake8 linting",
+            "python -m ruff check src/",
+            "Ruff linting",
         ),
         ("python -m mypy src/ --ignore-missing-imports", "Type checking"),
     ]
@@ -40,7 +37,7 @@ def main():
             all_passed = False
 
     if not all_passed:
-        print("\nSome checks failed. Run 'python scripts/format.py' to fix issues.")
+        print("\nSome checks failed. Run 'python scripts/format.py' to fix.")
         sys.exit(1)
 
     print("\nAll checks passed!")

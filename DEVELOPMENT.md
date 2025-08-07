@@ -30,7 +30,7 @@ git commit -m "feat: your changes"
 - **Line length**: 88 characters max
 - **Formatting**: Black (automatic)
 - **Import sorting**: isort (automatic)
-- **Linting**: flake8 (zero violations)
+- **Linting**: Ruff (zero violations)
 - **Type hints**: mypy (basic checking)
 
 ### Security Standards
@@ -54,5 +54,5 @@ black src/
 isort src/
 
 # Check issues
-flake8 src/
+ruff check src/
 ```
