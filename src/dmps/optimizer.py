@@ -3,7 +3,7 @@ Main orchestrator for prompt optimization.
 """
 
 import json
-from typing import Tuple
+from typing import Tuple, Literal
 from .schema import OptimizedResult, ValidationResult
 from .engine import OptimizationEngine
 from .validation import InputValidator
@@ -35,15 +35,21 @@ class PromptOptimizer:
             request.platform = platform
             
             optimization_data = self.engine.apply_optimization(request)
-            optimized_prompt = self.engine.assemble_prompt(optimization_data, request)
+            optimized_prompt = self.engine.assemble_prompt(
+                optimization_data, request
+            )
             
             formatter = self.formatters[mode]
-            result = formatter.format(optimization_data, request, optimized_prompt)
+            result = formatter.format(
+                optimization_data, request, optimized_prompt
+            )
             
             return result, validation
         
         except Exception as e:
-            return self._create_fallback_result(validation.sanitized_input or "", str(e), mode), ValidationResult(
+            return self._create_fallback_result(
+                validation.sanitized_input or "", str(e), mode
+            ), ValidationResult(
                 is_valid=False,
                 errors=[f"Optimization failed: {str(e)}"],
                 warnings=["Using emergency fallback"],
@@ -52,34 +58,50 @@ class PromptOptimizer:
     
     def _create_error_result(self, errors: list, mode: str) -> OptimizedResult:
         """Create error result for validation failures"""
-        error_message = "Optimization failed:\n" + "\n".join(f"• {error}" for error in errors)
+        error_message = "Optimization failed:\n" + "\n".join(
+            f"• {error}" for error in errors
+        )
         
         error_prompt = json.dumps({
             "error": True,
             "message": error_message,
             "errors": errors
-        }, indent=2) if mode == "structured" else f"**Error:**\n{error_message}"
+        }, indent=2) if mode == "structured" else (
+            f"**Error:**\n{error_message}"
+        )
+        
+        format_type: Literal['conversational', 'structured'] = (
+            'structured' if mode == 'structured' else 'conversational'
+        )
         
         return OptimizedResult(
             optimized_prompt=error_prompt,
             improvements=[],
             methodology_applied="Error Handling",
             metadata={"error": True, "error_count": len(errors)},
-            format_type=mode
+            format_type=format_type
         )
     
-    def _create_fallback_result(self, input_text: str, error: str, mode: str) -> OptimizedResult:
+    def _create_fallback_result(
+        self, input_text: str, error: str, mode: str
+    ) -> OptimizedResult:
         """Create fallback result for processing failures"""
         fallback_prompt = json.dumps({
             "status": "fallback",
             "original_prompt": input_text,
             "error": error
-        }, indent=2) if mode == "structured" else f"**Fallback:**\n{input_text}\n\nError: {error}"
+        }, indent=2) if mode == "structured" else (
+            f"**Fallback:**\n{input_text}\n\nError: {error}"
+        )
+        
+        format_type: Literal['conversational', 'structured'] = (
+            'structured' if mode == 'structured' else 'conversational'
+        )
         
         return OptimizedResult(
             optimized_prompt=fallback_prompt,
             improvements=["Emergency fallback applied"],
             methodology_applied="Fallback Mode",
             metadata={"fallback": True, "error": error},
-            format_type=mode
+            format_type=format_type
         )
