@@ -83,7 +83,7 @@ jobs:
 
     - name: Dependency vulnerability scan
       run: |
-        safety check --json --output safety-report.json
+        safety check --json > safety-report.json
         pip-audit --format=json --output=pip-audit-report.json
 
     - name: Upload security reports
