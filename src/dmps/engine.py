@@ -34,7 +34,7 @@ class OptimizationEngine:
         # Analyze prompt structure
         expected_format = self._determine_expected_output_format(prompt_input)
         user_constraints = self._extract_user_constraints(prompt_input)
-        missing_info = self._identify_missing_info(prompt_input, intent)
+        missing_info = self._identify_missing_info(prompt_input, detected_intent)
         
         return OptimizationRequest(
             raw_input=prompt_input,
@@ -131,8 +131,8 @@ class OptimizationEngine:
         
         # Format constraints
         try:
-            if re.search(r"\b(?:json|yaml|xml)\b", prompt, re.IGNORECASE):
-                constraints.append("Structured format required")
+            if re.search(r"\b(?:json|yaml|xml)\b", safe_prompt, re.IGNORECASE):
+                found_constraints.append("Structured format required")
         except re.error:
             pass
         

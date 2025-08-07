@@ -4,9 +4,12 @@ REPL (Read-Eval-Print Loop) interface for DMPS.
 
 import sys
 import json
+import time
+import hashlib
 from typing import Dict, Any, Final
 from .optimizer import PromptOptimizer
 from .security import SecurityConfig
+from .rbac import AccessControl, Role
 
 
 class DMPSShell:
@@ -27,10 +30,15 @@ class DMPSShell:
         self.max_history = SecurityConfig.MAX_HISTORY_SIZE
         self.request_count = 0
         self.max_requests = SecurityConfig.MAX_REQUESTS_PER_SESSION
+        self.session_id = hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]
+        self.failed_attempts = 0
+        self.last_activity = time.time()
+        self._audit_log = []
     
     def start(self):
-        """Start the REPL shell"""
-        print("🚀 DMPS Interactive Shell")
+        """Start the REPL shell with security monitoring"""
+        self._log_security_event("session_start", {"session_id": self.session_id})
+        print("DMPS Interactive Shell")
         print("Type 'help' for commands, 'exit' to quit")
         print("=" * 50)
         
@@ -45,7 +53,12 @@ class DMPSShell:
                     print("Goodbye! 👋")
                     break
                 
-                self._process_command(user_input)
+                if self._validate_session():
+                    self._process_command(user_input)
+                    self.last_activity = time.time()
+                else:
+                    print("Session expired. Please restart.")
+                    break
                 
             except KeyboardInterrupt:
                 print("\nUse 'exit' to quit")
@@ -63,14 +76,16 @@ class DMPSShell:
     
     def handle_command(self, command: str):
         """Handle command with RBAC validation"""
-        from .rbac import AccessControl
+        from .rbac import AccessControl, Role
+        
+        # Validate user role and command authorization
+        if not AccessControl.validate_command_access(Role.USER, command):
+            print(f"Access denied: {command}")
+            return
         
         if command == "help":
             self._show_help()
         elif command.startswith('/'):
-            print(f"Access denied: {command}")
-            return
-        elif not AccessControl.is_command_allowed(command.split()[0] if command.split() else ""):
             print(f"Access denied: {command}")
             return
         else:
@@ -83,10 +98,15 @@ class DMPSShell:
         parts = command[1:].split()
         cmd = parts[0].lower() if parts else ""
         
-        # RBAC validation
-        if not AccessControl.is_command_allowed(cmd):
+        # Comprehensive RBAC validation
+        if not AccessControl.validate_command_access(Role.USER, f".{cmd}"):
             print(f"Access denied: {command}")
             print("Type '.help' for available commands")
+            return
+        
+        # Additional validation for sensitive commands
+        if cmd in ['export', 'clear'] and not AccessControl.validate_file_operation(Role.USER, "write", "."):
+            print(f"Insufficient permissions for: {command}")
             return
         
         if cmd == "help":
@@ -110,11 +130,17 @@ class DMPSShell:
             dashboard.export_metrics(filename)
     
     def optimize_and_display(self, prompt: str):
-        """Optimize a prompt and display results"""
+        """Optimize a prompt and display results with security validation"""
         try:
+            # Security validation
+            if not self._validate_command_security(prompt):
+                print("❌ Command blocked by security policy")
+                return
+            
             # Rate limiting check
             self.request_count += 1
             if self.request_count > self.max_requests:
+                self._log_security_event("rate_limit_exceeded", {"request_count": self.request_count})
                 print("❌ Rate limit exceeded. Please restart the session.")
                 return
             
@@ -302,11 +328,17 @@ Examples:
         
         try:
             from pathlib import Path
+            
+            # Validate path before resolving to prevent traversal
+            if not SecurityConfig.validate_file_path(filename):
+                print(f"❌ Invalid file path: {filename}")
+                return
+            
             path = Path(filename).resolve()
             
-            # Prevent path traversal attacks
-            if not SecurityConfig.is_safe_path(filename):
-                print(f"❌ Invalid file path: {filename}")
+            # Additional validation after resolution
+            if not SecurityConfig.validate_file_path(str(path)):
+                print(f"❌ Unsafe resolved path: {filename}")
                 return
             
             # Validate file extension
@@ -336,7 +368,51 @@ Examples:
             print(f"💾 History saved to {filename}")
             
         except (OSError, ValueError, json.JSONEncodeError) as e:
+            self._log_security_event("file_operation_failed", {"error": str(e), "filename": filename})
             print(f"❌ Error saving: {e}")
+    
+    def _validate_session(self) -> bool:
+        """Validate session security constraints"""
+        # Session timeout check (30 minutes)
+        if time.time() - self.last_activity > 1800:
+            self._log_security_event("session_timeout", {"session_id": self.session_id})
+            return False
+        
+        # Rate limiting validation
+        if self.request_count > self.max_requests:
+            self._log_security_event("rate_limit_exceeded", {"session_id": self.session_id})
+            return False
+        
+        return True
+    
+    def _log_security_event(self, event_type: str, details: Dict[str, Any]):
+        """Log security events for audit trail"""
+        event = {
+            "timestamp": time.time(),
+            "session_id": self.session_id,
+            "event_type": event_type,
+            "details": details
+        }
+        self._audit_log.append(event)
+        
+        # Maintain audit log size
+        if len(self._audit_log) > 1000:
+            self._audit_log = self._audit_log[-1000:]
+    
+    def _validate_command_security(self, command: str) -> bool:
+        """Validate command against security policies"""
+        # Block potentially dangerous commands
+        dangerous_patterns = ['eval', 'exec', 'import', '__', 'subprocess']
+        if any(pattern in command.lower() for pattern in dangerous_patterns):
+            self._log_security_event("dangerous_command_blocked", {"command": command})
+            return False
+        
+        # RBAC validation
+        if not AccessControl.validate_command_access(Role.USER, command):
+            self._log_security_event("access_denied", {"command": command})
+            return False
+        
+        return True
 
 
 def main():

@@ -17,8 +17,8 @@ class ConversationalFormatter:
     _PROMPT_HEADER: Final = "**Optimized Prompt:**"
     
     @performance_monitor(threshold=0.02)
-    def format(self, optimization_data: Dict[str, Any], 
-               request: OptimizationRequest, 
+    def format(self, optimization_data: Dict[str, Any],
+               request: OptimizationRequest,
                optimized_prompt: str) -> OptimizedResult:
         """Format optimization result conversationally with performance monitoring"""
         

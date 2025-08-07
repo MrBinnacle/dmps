@@ -70,6 +70,10 @@ def read_file_content(filepath: str) -> str:
         
         path = Path(filepath).resolve()
         
+        # Validate against path traversal attacks
+        if not SecurityConfig.validate_file_path(str(path)):
+            raise PermissionError(f"Unsafe file path: {filepath}")
+        
         if not path.exists():
             raise FileNotFoundError(f"File not found: {filepath}")
         if not path.is_file():

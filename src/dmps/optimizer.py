@@ -113,16 +113,33 @@ class PromptOptimizer:
             return result, validation
         
         except (ValueError, TypeError, AttributeError) as e:
+            # Handle known processing errors with specific recovery
+            from .error_handler import error_handler
+            error_msg = error_handler.handle_error(e, "optimization_processing")
             return self._create_fallback_result(
-                validation.sanitized_input or "", str(e), mode
+                validation.sanitized_input or "", error_msg, mode
             ), ValidationResult(
                 is_valid=False,
-                errors=[f"Optimization failed: {str(e)}"],
+                errors=[f"Optimization failed: {error_msg}"],
+                warnings=["Using emergency fallback"],
+                sanitized_input=validation.sanitized_input
+            )
+        except ImportError as e:
+            # Handle missing dependencies with proper logging
+            from .error_handler import error_handler
+            error_msg = error_handler.handle_error(e, "missing_dependency")
+            return self._create_fallback_result(
+                validation.sanitized_input or "", error_msg, mode
+            ), ValidationResult(
+                is_valid=False,
+                errors=["Required component unavailable"],
                 warnings=["Using emergency fallback"],
                 sanitized_input=validation.sanitized_input
             )
         except Exception as e:
-            # Log unexpected errors but don't expose internal details
+            # Handle all other unexpected errors with secure logging
+            from .error_handler import error_handler
+            error_msg = error_handler.handle_error(e, "optimization_unexpected")
             return self._create_fallback_result(
                 validation.sanitized_input or "", "Internal processing error", mode
             ), ValidationResult(
@@ -163,7 +180,10 @@ class PromptOptimizer:
     ) -> OptimizedResult:
         """Create fallback result for processing failures"""
         # Sanitize error message to prevent information disclosure
-        safe_error = "Processing error occurred" if error else "Unknown error"
+        try:
+            safe_error = "Processing error occurred" if error and len(error) > 0 else "Unknown error"
+        except (TypeError, AttributeError):
+            safe_error = "Unknown error"
         
         fallback_prompt = json.dumps({
             "status": "fallback",
