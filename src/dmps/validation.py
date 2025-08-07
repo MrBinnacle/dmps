@@ -74,12 +74,11 @@ class InputValidator:
         """Check for potentially problematic content"""
         text_lower = text.lower()
         
-        for pattern in SecurityConfig.BLOCKED_PATTERNS:
+        for pattern in SecurityConfig.get_compiled_patterns():
             try:
-                if re.search(pattern, text_lower, re.IGNORECASE | re.DOTALL):
+                if pattern.search(text_lower):
                     return True
-            except re.error:
-                # Skip malformed patterns
+            except (re.error, AttributeError):
                 continue
         
         return False

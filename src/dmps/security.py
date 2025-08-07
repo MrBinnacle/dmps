@@ -5,7 +5,7 @@ Security configuration and utilities for DMPS.
 import os
 import re
 from pathlib import Path
-from typing import List, Set, Final
+from typing import List, Set, Final, Dict
 
 
 class SecurityConfig:
