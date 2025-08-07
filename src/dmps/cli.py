@@ -11,7 +11,6 @@ Usage:
 
 import argparse
 import sys
-import os
 from pathlib import Path
 from .optimizer import PromptOptimizer
 
@@ -238,7 +237,7 @@ def main():
         if args.file:
             prompt_input = read_file_content(args.file)
         else:
-            prompt_input = args.prompt
+            prompt_input = args.prompt or ""
         
         if not prompt_input:
             print("Error: No prompt provided", file=sys.stderr)
