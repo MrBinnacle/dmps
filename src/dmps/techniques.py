@@ -3,43 +3,54 @@
 """
 
 import re
-from typing import Dict, List
+from typing import Dict, List, Final
 
 
 class OptimizationTechniques:
-    """Implementation of 4-D optimization techniques"""
+    """4-D methodology implementation: Deconstruct, Develop, Design, Deliver"""
+    
+    # Supported platforms and techniques
+    ALLOWED_PLATFORMS: Final = frozenset({"claude", "chatgpt", "gemini", "generic"})
+    ALLOWED_TECHNIQUES: Final = frozenset({"develop_clarity", "design_structure", "deliver_format"})
+    
+    # Compiled patterns for performance
+    _CONTEXT_KEYWORDS = re.compile(r"context|background|requirements", re.IGNORECASE)
+    _FORMAT_KEYWORDS = re.compile(r"format|structure|organize", re.IGNORECASE)
+    _WHITESPACE_CLEANER = re.compile(r'\s+')
     
     def develop_clarity(self, prompt: str, intent: str) -> str:
-        """Develop: Enhance clarity and specificity"""
-        enhanced = prompt
+        """Step 1: Develop clarity by removing vague terms and adding context"""
+        enhanced_prompt = prompt
         
-        # Add context markers based on intent
-        if intent == "technical":
-            if not re.search(r"context|background|requirements", enhanced, re.IGNORECASE):
-                enhanced = f"Context: {enhanced}"
+        # Add technical context if missing
+        if intent == "technical" and not self._CONTEXT_KEYWORDS.search(enhanced_prompt):
+            enhanced_prompt = f"Context: {enhanced_prompt}"
         
-        # Enhance vague terms
-        vague_replacements = {
-            r"\bsomething\b": "a specific item",
-            r"\banything\b": "any relevant information",
-            r"\bstuff\b": "relevant details",
-            r"\bthings\b": "specific elements"
-        }
+        # Replace vague terms with specific alternatives
+        vague_term_replacements = [
+            (re.compile(r"\bsomething\b", re.IGNORECASE), "a specific item"),
+            (re.compile(r"\banything\b", re.IGNORECASE), "any relevant information"),
+            (re.compile(r"\bstuff\b", re.IGNORECASE), "relevant details"),
+            (re.compile(r"\bthings\b", re.IGNORECASE), "specific elements")
+        ]
         
-        for pattern, replacement in vague_replacements.items():
-            enhanced = re.sub(pattern, replacement, enhanced, flags=re.IGNORECASE)
+        for vague_pattern, specific_replacement in vague_term_replacements:
+            enhanced_prompt = vague_pattern.sub(specific_replacement, enhanced_prompt)
         
-        # Add specificity markers
-        if len(enhanced.split()) < 10:
-            enhanced += " Please provide detailed information."
+        # Encourage detail for short prompts
+        if len(enhanced_prompt.split()) < 10:
+            enhanced_prompt += " Please provide detailed information."
         
-        return enhanced
+        return enhanced_prompt
     
     def design_structure(self, prompt: str, platform: str, intent: str) -> str:
-        """Design: Structure for target platform"""
-        structured = prompt
+        """Step 2: Design structure optimized for target AI platform"""
+        structured_prompt = prompt
         
-        # Platform-specific optimizations
+        # Platform validation
+        if platform not in self.ALLOWED_PLATFORMS:
+            platform = "generic"
+        
         platform_templates = {
             "claude": {
                 "prefix": "Human: ",
@@ -63,30 +74,29 @@ class OptimizationTechniques:
             }
         }
         
-        template = platform_templates.get(platform, platform_templates["generic"])
+        platform_template = platform_templates[platform]
         
-        # Apply platform structure if prompt is simple
-        if len(structured.split()) < 15:
-            action = structured.lower().strip()
-            if template["structure"] and "{action}" in template["structure"]:
-                structured = template["structure"].format(action=action)
+        # Apply platform-specific structure for simple prompts
+        if len(structured_prompt.split()) < 15:
+            user_action = structured_prompt.lower().strip()
+            if platform_template["structure"] and "{action}" in platform_template["structure"]:
+                structured_prompt = platform_template["structure"].format(action=user_action)
             
-            if template["prefix"]:
-                structured = template["prefix"] + structured
+            if platform_template["prefix"]:
+                structured_prompt = platform_template["prefix"] + structured_prompt
             
-            if template["suffix"]:
-                structured += " " + template["suffix"]
+            if platform_template["suffix"]:
+                structured_prompt += " " + platform_template["suffix"]
         
-        # Intent-specific structuring
-        if intent == "technical":
-            if not structured.startswith(("Please", "Can you", "How")):
-                structured = f"Please {structured.lower()}"
+        # Add polite framing for technical requests
+        if intent == "technical" and not structured_prompt.startswith(("Please", "Can you", "How")):
+            structured_prompt = f"Please {structured_prompt.lower()}"
         
-        return structured
+        return structured_prompt
     
     def deliver_format(self, prompt: str, output_type: str) -> str:
-        """Deliver: Final formatting and validation"""
-        formatted = prompt
+        """Step 3: Deliver final formatting based on expected output type"""
+        formatted_prompt = prompt
         
         # Output type specific formatting
         format_instructions = {
@@ -97,27 +107,30 @@ class OptimizationTechniques:
             "general": "Please provide a comprehensive and well-structured response."
         }
         
-        instruction = format_instructions.get(output_type, format_instructions["general"])
+        format_instruction = format_instructions.get(output_type, format_instructions["general"])
         
-        # Add formatting instruction if not already present
-        if not re.search(r"format|structure|organize", formatted, re.IGNORECASE):
-            formatted += f" {instruction}"
+        # Add format guidance if not already specified
+        if not self._FORMAT_KEYWORDS.search(formatted_prompt):
+            formatted_prompt += f" {format_instruction}"
         
-        # Ensure proper punctuation
-        if not formatted.endswith(('.', '!', '?')):
-            formatted += '.'
+        # Ensure proper sentence ending
+        if not formatted_prompt.endswith(('.', '!', '?')):
+            formatted_prompt += '.'
         
-        # Clean up extra spaces
-        formatted = re.sub(r'\s+', ' ', formatted).strip()
+        # Clean whitespace
+        formatted_prompt = self._WHITESPACE_CLEANER.sub(' ', formatted_prompt).strip()
         
-        return formatted
+        return formatted_prompt
     
     def get_technique_description(self, technique: str) -> str:
-        """Get description of optimization technique"""
+        """Get description of optimization technique with validation"""
+        if technique not in self.ALLOWED_TECHNIQUES:
+            return "Unknown technique"
+        
         descriptions = {
             "develop_clarity": "Enhanced clarity and specificity by replacing vague terms and adding context",
             "design_structure": "Optimized structure for target platform and intent",
             "deliver_format": "Applied final formatting and output type optimization"
         }
         
-        return descriptions.get(technique, "Applied optimization technique")
+        return descriptions[technique]

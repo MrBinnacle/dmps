@@ -6,8 +6,9 @@ DMPS CLI Implementation
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Final
 from .optimizer import PromptOptimizer
+from .security import SecurityConfig
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -52,29 +53,63 @@ Examples:
 
 
 def read_file_content(filepath: str) -> str:
-    """Read content from file"""
+    """Read content from file with secure error handling"""
+    from .error_handler import error_handler
+    from .rbac import AccessControl, Role
+    
     try:
-        path = Path(filepath)
+        # RBAC validation
+        if not AccessControl.validate_file_operation(Role.USER, "read", filepath):
+            raise PermissionError("File access denied")
+        
+        path = Path(filepath).resolve()
+        
         if not path.exists():
             raise FileNotFoundError(f"File not found: {filepath}")
+        if not path.is_file():
+            raise ValueError(f"Path is not a file: {filepath}")
+        if path.stat().st_size > SecurityConfig.MAX_FILE_SIZE:
+            raise ValueError(f"File too large: {filepath}")
+        
         return path.read_text(encoding='utf-8').strip()
-    except Exception as e:
-        print(f"Error reading file {filepath}: {e}", file=sys.stderr)
+        
+    except (PermissionError, ValueError) as e:
+        user_msg = error_handler.handle_security_error(e, f"read_file: {filepath}")
+        print(user_msg, file=sys.stderr)
+        sys.exit(1)
+    except (OSError, FileNotFoundError) as e:
+        user_msg = error_handler.handle_error(e, f"read_file: {filepath}")
+        print(user_msg, file=sys.stderr)
         sys.exit(1)
 
 
 def write_output(content: str, output_file: Optional[str] = None,
                  quiet: bool = False):
-    """Write output to file or stdout"""
+    """Write output with secure error handling"""
+    from .error_handler import error_handler
+    from .rbac import AccessControl, Role
+    
     try:
         if output_file:
-            Path(output_file).write_text(content, encoding='utf-8')
+            # RBAC validation
+            if not AccessControl.validate_file_operation(Role.USER, "write", output_file):
+                raise PermissionError("File write access denied")
+            
+            path = Path(output_file).resolve()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding='utf-8')
             if not quiet:
                 print(f"Output written to: {output_file}", file=sys.stderr)
         else:
             print(content)
-    except Exception as e:
-        print(f"Error writing output: {e}", file=sys.stderr)
+            
+    except PermissionError as e:
+        user_msg = error_handler.handle_security_error(e, f"write_output: {output_file}")
+        print(user_msg, file=sys.stderr)
+        sys.exit(1)
+    except (OSError, ValueError) as e:
+        user_msg = error_handler.handle_error(e, f"write_output: {output_file}")
+        print(user_msg, file=sys.stderr)
         sys.exit(1)
 
 
@@ -110,9 +145,8 @@ Just type your prompt to optimize it!
                 continue
 
             if prompt.lower() == 'mode':
-                mode = input("Enter mode (conversational/structured): ")
-                mode = mode.strip().lower()
-                if mode in ['conversational', 'structured']:
+                mode = input("Enter mode (conversational/structured): ").strip().lower()
+                if mode in {'conversational', 'structured'}:
                     print(f"Mode set to: {mode}")
                 else:
                     print("Invalid mode. Use 'conversational' or 'structured'")
@@ -120,7 +154,7 @@ Just type your prompt to optimize it!
 
             if prompt.lower() == 'platform':
                 platform = input("Enter platform: ").strip().lower()
-                if platform in ['claude', 'chatgpt', 'gemini', 'generic']:
+                if platform in {'claude', 'chatgpt', 'gemini', 'generic'}:
                     print(f"Platform set to: {platform}")
                 else:
                     print("Invalid platform.")
@@ -143,8 +177,14 @@ Just type your prompt to optimize it!
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
+        except (ValueError, TypeError) as e:
+            from .error_handler import error_handler
+            actionable_msg = error_handler.handle_error(e, "interactive_mode_input")
+            print(f"Input error: {actionable_msg}", file=sys.stderr)
         except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
+            from .error_handler import error_handler
+            actionable_msg = error_handler.handle_error(e, "interactive_mode_general")
+            print(f"Error: {actionable_msg}", file=sys.stderr)
 
 
 def main():
@@ -201,7 +241,9 @@ def main():
         print("\nOperation cancelled by user", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        from .error_handler import error_handler
+        actionable_msg = error_handler.handle_error(e, "main_cli_execution")
+        print(f"Error: {actionable_msg}", file=sys.stderr)
         sys.exit(1)
 
 

@@ -4,12 +4,17 @@ REPL (Read-Eval-Print Loop) interface for DMPS.
 
 import sys
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Final
 from .optimizer import PromptOptimizer
+from .security import SecurityConfig
 
 
 class DMPSShell:
     """Interactive REPL shell for DMPS"""
+    
+    # Valid settings for validation
+    _VALID_MODES: Final = frozenset({"conversational", "structured"})
+    _VALID_PLATFORMS: Final = frozenset({"claude", "chatgpt", "gemini", "generic"})
     
     def __init__(self):
         self.optimizer = PromptOptimizer()
@@ -19,6 +24,9 @@ class DMPSShell:
             "show_metadata": False
         }
         self.history = []
+        self.max_history = SecurityConfig.MAX_HISTORY_SIZE
+        self.request_count = 0
+        self.max_requests = SecurityConfig.MAX_REQUESTS_PER_SESSION
     
     def start(self):
         """Start the REPL shell"""
@@ -54,54 +62,72 @@ class DMPSShell:
             self.optimize_and_display(command)
     
     def handle_command(self, command: str):
-        """Handle command (for test compatibility)"""
+        """Handle command with RBAC validation"""
+        from .rbac import AccessControl
+        
         if command == "help":
             self._show_help()
         elif command.startswith('/'):
-            cmd_name = command[1:].split()[0]
-            if cmd_name == "unknown_command":
-                print(f"Unknown command: {command}")
-                return
+            print(f"Access denied: {command}")
+            return
+        elif not AccessControl.is_command_allowed(command.split()[0] if command.split() else ""):
+            print(f"Access denied: {command}")
+            return
         else:
             self._process_command(command)
     
     def _handle_meta_command(self, command: str):
-        """Handle meta commands (starting with .)"""
+        """Handle meta commands with RBAC validation"""
+        from .rbac import AccessControl, Role
+        
         parts = command[1:].split()
         cmd = parts[0].lower() if parts else ""
+        
+        # RBAC validation
+        if not AccessControl.is_command_allowed(cmd):
+            print(f"Access denied: {command}")
+            print("Type '.help' for available commands")
+            return
         
         if cmd == "help":
             self._show_help()
         elif cmd == "settings":
-            self._show_settings()
+            self._display_current_configuration()
         elif cmd == "set":
-            self._set_setting(parts[1:])
+            self._update_configuration_setting(parts[1:])
         elif cmd == "history":
             self._show_history()
         elif cmd == "clear":
             self._clear_history()
         elif cmd == "version":
             print("DMPS v0.1.0")
-        else:
-            print(f"Unknown command: {command}")
-            print("Type '.help' for available commands")
     
     def optimize_and_display(self, prompt: str):
         """Optimize a prompt and display results"""
         try:
+            # Rate limiting check
+            self.request_count += 1
+            if self.request_count > self.max_requests:
+                print("❌ Rate limit exceeded. Please restart the session.")
+                return
+            
             result, validation = self.optimizer.optimize(
                 prompt, 
                 mode=self.settings["mode"],
                 platform=self.settings["platform"]
             )
             
-            # Store in history
+            # Store in history with size limit
             self.history.append({
                 "input": prompt,
                 "result": result,
                 "validation": validation,
                 "settings": self.settings.copy()
             })
+            
+            # Maintain history size limit
+            if len(self.history) > self.max_history:
+                self.history = self.history[-self.max_history:]
             
             # Show warnings if any
             if validation.warnings:
@@ -125,8 +151,16 @@ class DMPSShell:
                     for improvement in result.improvements:
                         print(f"     - {improvement}")
             
+        except KeyboardInterrupt:
+            print("\n⚠️ Operation cancelled")
+        except (ValueError, TypeError) as e:
+            from .error_handler import error_handler
+            user_msg = error_handler.handle_error(e, "optimize_and_display")
+            print(f"❌ {user_msg}")
         except Exception as e:
-            print(f"❌ Error: {e}")
+            from .error_handler import error_handler
+            user_msg = error_handler.handle_error(e, "optimize_and_display")
+            print(f"❌ {user_msg}")
     
     def _show_help(self):
         """Show help information"""
@@ -157,35 +191,35 @@ Examples:
         """
         print(help_text)
     
-    def _show_settings(self):
-        """Show current settings"""
-        print("⚙️  Current Settings:")
-        for key, value in self.settings.items():
-            print(f"   • {key}: {value}")
+    def _display_current_configuration(self):
+        """Display current REPL configuration settings"""
+        print("⚙️  Current Configuration:")
+        for setting_name, setting_value in self.settings.items():
+            print(f"   • {setting_name}: {setting_value}")
     
     def cmd_settings(self, args):
         """Settings command for test compatibility"""
         self._show_settings()
     
-    def _set_setting(self, args):
-        """Set a configuration setting"""
-        if len(args) < 2:
-            print("Usage: .set <key> <value>")
+    def _update_configuration_setting(self, command_args):
+        """Update a specific configuration setting"""
+        if len(command_args) < 2:
+            print("Usage: .set <setting_name> <setting_value>")
             return
         
-        key, value = args[0], args[1]
+        setting_name, new_value = command_args[0], command_args[1]
         
-        if key == "mode" and value in ["conversational", "structured"]:
-            self.settings["mode"] = value
-            print(f"✅ Set mode to: {value}")
-        elif key == "platform" and value in ["claude", "chatgpt", "gemini", "generic"]:
-            self.settings["platform"] = value
-            print(f"✅ Set platform to: {value}")
-        elif key == "show_metadata" and value.lower() in ["true", "false"]:
-            self.settings["show_metadata"] = value.lower() == "true"
-            print(f"✅ Set show_metadata to: {value}")
+        if setting_name == "mode" and new_value in self._VALID_MODES:
+            self.settings["mode"] = new_value
+            print(f"✅ Updated mode to: {new_value}")
+        elif setting_name == "platform" and new_value in self._VALID_PLATFORMS:
+            self.settings["platform"] = new_value
+            print(f"✅ Updated platform to: {new_value}")
+        elif setting_name == "show_metadata" and new_value.lower() in ["true", "false"]:
+            self.settings["show_metadata"] = new_value.lower() == "true"
+            print(f"✅ Updated show_metadata to: {new_value}")
         else:
-            print(f"❌ Invalid setting: {key}={value}")
+            print(f"❌ Invalid configuration: {setting_name}={new_value}")
             print("Valid settings: mode, platform, show_metadata")
     
     def cmd_set(self, args):
@@ -237,29 +271,49 @@ Examples:
         sys.exit(0)
     
     def cmd_save(self, args):
-        """Save command for test compatibility"""
+        """Save command with path traversal protection"""
         if not args:
             print("Usage: save <filename>")
             return
         
         filename = args[0]
         
-        # Convert history to serializable format
-        serializable_history = []
-        for item in self.history:
-            serializable_item = {
-                "input": item["input"],
-                "optimized_prompt": item["result"].optimized_prompt if "result" in item else "",
-                "improvements": item["result"].improvements if "result" in item else [],
-                "settings": item.get("settings", {})
-            }
-            serializable_history.append(serializable_item)
-        
         try:
-            with open(filename, 'w') as f:
+            from pathlib import Path
+            path = Path(filename).resolve()
+            
+            # Prevent path traversal attacks
+            if not SecurityConfig.is_safe_path(filename):
+                print(f"❌ Invalid file path: {filename}")
+                return
+            
+            # Validate file extension
+            if not SecurityConfig.validate_file_extension(filename):
+                print("❌ Only .json and .txt files are allowed")
+                return
+            
+            # Sanitize filename
+            filename = SecurityConfig.sanitize_filename(filename)
+            
+            # Convert history to serializable format
+            serializable_history = []
+            for item in self.history:
+                serializable_item = {
+                    "input": item["input"],
+                    "optimized_prompt": item["result"].optimized_prompt if "result" in item else "",
+                    "improvements": item["result"].improvements if "result" in item else [],
+                    "settings": item.get("settings", {})
+                }
+                serializable_history.append(serializable_item)
+            
+            # Ensure parent directory exists
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(path, 'w', encoding='utf-8') as f:
                 json.dump(serializable_history, f, indent=2)
             print(f"💾 History saved to {filename}")
-        except Exception as e:
+            
+        except (OSError, ValueError, json.JSONEncodeError) as e:
             print(f"❌ Error saving: {e}")
 
 

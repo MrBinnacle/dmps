@@ -7,30 +7,39 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Security scan
+      run: |
+        pip install bandit safety
+        bandit -r src/ --severity-level medium
+        safety check
+
+  quality-gate:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.8, 3.9, "3.10", "3.11"]
-
     steps:
     - uses: actions/checkout@v3
-    
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        pip install pytest pyright
-    
-    - name: Run tests
+        pip install pytest pytest-cov flake8 pyright bandit
+    - name: Security regression test
       run: |
-        python -m pytest tests/ -v
-    
-    - name: Type check
+        python -c "from dmps.security import SecurityConfig; assert not SecurityConfig.is_safe_path('../../../etc/passwd')"
+    - name: Code quality
       run: |
-        pyright src/ || true
+        flake8 src/ --max-line-length=88 --max-complexity=10
+        pyright src/
+    - name: Test with coverage
+      run: |
+        pytest tests/ --cov=src --cov-fail-under=80

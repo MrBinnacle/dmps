@@ -3,71 +3,77 @@ Intent classification for prompt optimization.
 """
 
 import re
-from typing import Dict, List
+from typing import Dict, List, Final
 
 
 class IntentClassifier:
     """Classifies prompt intent for optimization"""
     
     def __init__(self):
-        self.intent_patterns = {
+        # Pre-compiled patterns for performance
+        self.compiled_patterns = {
             "creative": [
-                r"\b(write|create|generate|compose)\b.*\b(story|poem|article|content)\b",
-                r"\b(creative|imaginative|artistic)\b",
-                r"\b(character|plot|narrative|fiction)\b"
+                re.compile(r"\b(write|create|generate|compose)\b.*\b(story|poem|article|content)\b", re.IGNORECASE),
+                re.compile(r"\b(creative|imaginative|artistic)\b", re.IGNORECASE),
+                re.compile(r"\b(character|plot|narrative|fiction)\b", re.IGNORECASE)
             ],
             "technical": [
-                r"\b(code|program|function|algorithm|debug)\b",
-                r"\b(technical|programming|software|development)\b",
-                r"\b(api|database|server|framework)\b",
-                r"\b(explain|how does|how to)\b.*\b(work|function|implement)\b"
+                re.compile(r"\b(code|program|function|algorithm|debug)\b", re.IGNORECASE),
+                re.compile(r"\b(technical|programming|software|development)\b", re.IGNORECASE),
+                re.compile(r"\b(api|database|server|framework)\b", re.IGNORECASE),
+                re.compile(r"\b(explain|how does|how to)\b.*\b(work|function|implement)\b", re.IGNORECASE)
             ],
             "educational": [
-                r"\b(explain|teach|learn|understand|clarify)\b",
-                r"\b(what is|define|definition|concept)\b",
-                r"\b(tutorial|guide|instruction|lesson)\b",
-                r"\b(example|demonstrate|show me)\b"
+                re.compile(r"\b(explain|teach|learn|understand|clarify)\b", re.IGNORECASE),
+                re.compile(r"\b(what is|define|definition|concept)\b", re.IGNORECASE),
+                re.compile(r"\b(tutorial|guide|instruction|lesson)\b", re.IGNORECASE),
+                re.compile(r"\b(example|demonstrate|show me)\b", re.IGNORECASE)
             ],
             "analytical": [
-                r"\b(analyze|compare|evaluate|assess|review)\b",
-                r"\b(pros and cons|advantages|disadvantages)\b",
-                r"\b(data|statistics|research|study)\b",
-                r"\b(conclusion|summary|findings)\b"
+                re.compile(r"\b(analyze|compare|evaluate|assess|review)\b", re.IGNORECASE),
+                re.compile(r"\b(pros and cons|advantages|disadvantages)\b", re.IGNORECASE),
+                re.compile(r"\b(data|statistics|research|study)\b", re.IGNORECASE),
+                re.compile(r"\b(conclusion|summary|findings)\b", re.IGNORECASE)
             ],
             "conversational": [
-                r"\b(chat|talk|discuss|conversation)\b",
-                r"\b(opinion|think|feel|believe)\b",
-                r"\b(casual|friendly|informal)\b"
+                re.compile(r"\b(chat|talk|discuss|conversation)\b", re.IGNORECASE),
+                re.compile(r"\b(opinion|think|feel|believe)\b", re.IGNORECASE),
+                re.compile(r"\b(casual|friendly|informal)\b", re.IGNORECASE)
             ]
         }
     
     def classify(self, prompt: str) -> str:
-        """Classify prompt intent"""
-        prompt_lower = prompt.lower()
-        scores = {}
+        """Classify prompt intent using compiled patterns with performance monitoring"""
+        from .profiler import performance_monitor
         
-        for intent, patterns in self.intent_patterns.items():
-            score = 0
-            for pattern in patterns:
-                matches = len(re.findall(pattern, prompt_lower))
-                score += matches
-            scores[intent] = score
+        @performance_monitor(threshold=0.05)
+        def _classify_with_monitoring():
+            scores = {}
+            
+            for intent, patterns in self.compiled_patterns.items():
+                score = 0
+                for pattern in patterns:
+                    matches = len(pattern.findall(prompt))
+                    score += matches
+                scores[intent] = score
+            
+            # Return highest scoring intent, default to 'general'
+            if max(scores.values()) > 0:
+                return max(scores, key=scores.get)
+            return "general"
         
-        # Return highest scoring intent, default to 'general'
-        if max(scores.values()) > 0:
-            return max(scores, key=scores.get)
-        
-        return "general"
+        return _classify_with_monitoring()
+    
+    # Static keyword mapping for performance
+    _KEYWORD_MAP: Final = {
+        "creative": ["story", "creative", "write", "generate", "imaginative"],
+        "technical": ["code", "technical", "program", "debug", "implement"],
+        "educational": ["explain", "teach", "learn", "tutorial", "example"],
+        "analytical": ["analyze", "compare", "evaluate", "data", "research"],
+        "conversational": ["chat", "discuss", "opinion", "casual", "friendly"],
+        "general": ["help", "assist", "provide", "give", "show"]
+    }
     
     def get_intent_keywords(self, intent: str) -> List[str]:
         """Get keywords associated with an intent"""
-        keyword_map = {
-            "creative": ["story", "creative", "write", "generate", "imaginative"],
-            "technical": ["code", "technical", "program", "debug", "implement"],
-            "educational": ["explain", "teach", "learn", "tutorial", "example"],
-            "analytical": ["analyze", "compare", "evaluate", "data", "research"],
-            "conversational": ["chat", "discuss", "opinion", "casual", "friendly"],
-            "general": ["help", "assist", "provide", "give", "show"]
-        }
-        
-        return keyword_map.get(intent, keyword_map["general"])
+        return self._KEYWORD_MAP.get(intent, self._KEYWORD_MAP["general"])
