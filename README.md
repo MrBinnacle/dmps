@@ -175,8 +175,11 @@ dmps --help
 # Install development tools and pre-commit hooks
 python setup-dev.py
 
-# Run quality checks
-python scripts/format.py
+# Enable automatic formatting in VS Code (recommended)
+# Settings are in .vscode/settings.json
+
+# Manual quality check (if needed)
+python -m black src/ && python -m isort src/
 ```
 
 ### Running Tests

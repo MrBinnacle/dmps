@@ -191,8 +191,6 @@ class OptimizationEngine:
             "complexity": (
                 "high"
                 if len(prompt.split()) > 50
-                else "medium"
-                if len(prompt.split()) > 20
-                else "low"
+                else "medium" if len(prompt.split()) > 20 else "low"
             ),
         }

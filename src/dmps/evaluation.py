@@ -212,9 +212,7 @@ class ContextEvaluator:
         trend = (
             "improving"
             if recent_avg > older_avg
-            else "declining"
-            if recent_avg < older_avg
-            else "stable"
+            else "declining" if recent_avg < older_avg else "stable"
         )
 
         return {

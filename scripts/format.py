@@ -27,18 +27,31 @@ def main():
     src_path = Path("src/dmps")
 
     if not src_path.exists():
-        print("❌ Source directory not found")
+        print("Source directory not found")
         sys.exit(1)
 
-    commands = [
-        ("black src/", "Code formatting"),
-        ("isort src/", "Import sorting"),
-        ("flake8 src/ --count --statistics", "Linting"),
-        ("mypy src/ --ignore-missing-imports", "Type checking"),
+    # Auto-fix commands (always run)
+    fix_commands = [
+        ("python -m black src/", "Code formatting"),
+        ("python -m isort src/", "Import sorting"),
     ]
 
+    # Check commands (report issues)
+    check_commands = [
+        (
+            "python -m flake8 src/ --max-line-length=88 --extend-ignore=E203,W503",
+            "Linting",
+        ),
+        ("python -m mypy src/ --ignore-missing-imports", "Type checking"),
+    ]
+
+    print("Auto-fixing formatting...")
+    for cmd, desc in fix_commands:
+        run_command(cmd, desc)
+
+    print("\nRunning quality checks...")
     all_passed = True
-    for cmd, desc in commands:
+    for cmd, desc in check_commands:
         if not run_command(cmd, desc):
             all_passed = False
 

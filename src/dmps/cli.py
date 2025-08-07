@@ -258,7 +258,7 @@ def main():
 
         if not args.quiet:
             print(
-                f"Optimizing prompt for {args.platform} in " f"{args.mode} mode...",
+                f"Optimizing prompt for {args.platform} in {args.mode} mode...",
                 file=sys.stderr,
             )
 
@@ -287,7 +287,7 @@ def main():
         if not args.quiet:
             techniques_count = len(result.improvements)
             print(
-                f"Optimization complete! Applied {techniques_count} " f"improvements.",
+                f"Optimization complete! Applied {techniques_count} improvements.",
                 file=sys.stderr,
             )
 
@@ -295,10 +295,8 @@ def main():
             if "token_metrics" in result.metadata:
                 metrics = result.metadata["token_metrics"]
                 print(
-                    f"Token reduction: {
-                        metrics['token_reduction']}, "
-                    f"Cost estimate: ${
-                        metrics['cost_estimate']:.4f}",
+                    f"Token reduction: {metrics['token_reduction']}, "
+                    f"Cost estimate: ${metrics['cost_estimate']:.4f}",
                     file=sys.stderr,
                 )
 

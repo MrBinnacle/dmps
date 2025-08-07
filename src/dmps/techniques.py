@@ -130,9 +130,7 @@ class OptimizationTechniques:
             formatted_prompt += "."
 
         # Clean whitespace
-        formatted_prompt = (
-            self._WHITESPACE_CLEANER.sub(" ", formatted_prompt)
-        ).strip()
+        formatted_prompt = (self._WHITESPACE_CLEANER.sub(" ", formatted_prompt)).strip()
 
         return formatted_prompt
 
