@@ -3,147 +3,149 @@ Core optimization engine implementing the 4-D methodology.
 """
 
 import re
-from typing import List, Optional, Dict, Any
+from typing import Dict, List, Any
 from .schema import OptimizationRequest
-from .intent import IntentClassifier, GapAnalyzer
+from .intent import IntentClassifier
 from .techniques import OptimizationTechniques
 
 
 class OptimizationEngine:
-    """Core 4-D optimization engine"""
+    """Core engine for prompt optimization using 4-D methodology"""
+    
+    def __init__(self):
+        self.intent_classifier = IntentClassifier()
+        self.techniques = OptimizationTechniques()
     
     def extract_intent(self, prompt_input: str) -> OptimizationRequest:
-        """DECONSTRUCT: Extract intent and identify gaps"""
-        intent = IntentClassifier.detect_intent(prompt_input)
-        missing_info = GapAnalyzer.identify_gaps(prompt_input, intent)
+        """Extract intent and create optimization request"""
+        intent = self.intent_classifier.classify(prompt_input)
+        
+        # Analyze prompt structure
+        output_type = self._determine_output_type(prompt_input)
         constraints = self._extract_constraints(prompt_input)
+        missing_info = self._identify_missing_info(prompt_input, intent)
         
         return OptimizationRequest(
             raw_input=prompt_input,
             intent=intent,
-            output_type=self._infer_output_type(prompt_input, intent),
-            platform="claude",  # Default platform
+            output_type=output_type,
+            platform="claude",  # Default, will be overridden
             constraints=constraints,
             missing_info=missing_info
         )
     
-    def _extract_constraints(self, text: str) -> List[str]:
-        """Extract explicit constraints from text"""
+    def apply_optimization(self, request: OptimizationRequest) -> Dict[str, Any]:
+        """Apply 4-D optimization techniques"""
+        optimization_data = {
+            "original_prompt": request.raw_input,
+            "intent": request.intent,
+            "platform": request.platform,
+            "improvements": [],
+            "techniques_applied": []
+        }
+        
+        # Deconstruct: Analyze prompt components
+        components = self._deconstruct_prompt(request.raw_input)
+        optimization_data["components"] = components
+        
+        # Develop: Enhance clarity and specificity
+        developed_prompt = self.techniques.develop_clarity(
+            request.raw_input, request.intent
+        )
+        if developed_prompt != request.raw_input:
+            optimization_data["improvements"].append("Enhanced clarity and specificity")
+            optimization_data["techniques_applied"].append("develop_clarity")
+        
+        # Design: Structure for target platform
+        designed_prompt = self.techniques.design_structure(
+            developed_prompt, request.platform, request.intent
+        )
+        if designed_prompt != developed_prompt:
+            optimization_data["improvements"].append("Optimized structure for platform")
+            optimization_data["techniques_applied"].append("design_structure")
+        
+        # Deliver: Final formatting and validation
+        final_prompt = self.techniques.deliver_format(
+            designed_prompt, request.output_type
+        )
+        if final_prompt != designed_prompt:
+            optimization_data["improvements"].append("Applied final formatting")
+            optimization_data["techniques_applied"].append("deliver_format")
+        
+        optimization_data["optimized_prompt"] = final_prompt
+        
+        return optimization_data
+    
+    def assemble_prompt(self, optimization_data: Dict[str, Any], 
+                       request: OptimizationRequest) -> str:
+        """Assemble the final optimized prompt"""
+        return optimization_data.get("optimized_prompt", request.raw_input)
+    
+    def _determine_output_type(self, prompt: str) -> str:
+        """Determine expected output type"""
+        prompt_lower = prompt.lower()
+        
+        if any(word in prompt_lower for word in ["list", "bullet", "enumerate"]):
+            return "list"
+        elif any(word in prompt_lower for word in ["explain", "describe", "tell"]):
+            return "explanation"
+        elif any(word in prompt_lower for word in ["code", "function", "script"]):
+            return "code"
+        elif any(word in prompt_lower for word in ["story", "narrative", "write"]):
+            return "creative"
+        else:
+            return "general"
+    
+    def _extract_constraints(self, prompt: str) -> List[str]:
+        """Extract explicit constraints from prompt"""
         constraints = []
-        text_lower = text.lower()
         
         # Length constraints
         length_patterns = [
             r"(\d+)\s*words?",
             r"(\d+)\s*characters?",
-            r"(\d+)\s*pages?",
-            r"under (\d+)",
-            r"less than (\d+)",
-            r"maximum (\d+)"
+            r"brief",
+            r"detailed",
+            r"short",
+            r"long"
         ]
+        
         for pattern in length_patterns:
-            matches = re.findall(pattern, text_lower)
-            if matches:
-                constraints.append(f"Length limit: {matches[0]} words/characters")
+            if re.search(pattern, prompt, re.IGNORECASE):
+                constraints.append(f"Length constraint: {pattern}")
         
-        # Style constraints
-        style_keywords = ["formal", "informal", "professional", "casual", "academic", "conversational"]
-        for keyword in style_keywords:
-            if keyword in text_lower:
-                constraints.append(f"Style: {keyword}")
-        
-        # Language constraints
-        if "python" in text_lower:
-            constraints.append("Language: Python")
-        elif "javascript" in text_lower:
-            constraints.append("Language: JavaScript")
-        elif "java" in text_lower and "javascript" not in text_lower:
-            constraints.append("Language: Java")
+        # Format constraints
+        if re.search(r"json|yaml|xml", prompt, re.IGNORECASE):
+            constraints.append("Structured format required")
         
         return constraints
     
-    def _infer_output_type(self, text: str, intent: str) -> str:
-        """Infer desired output type"""
-        text_lower = text.lower()
+    def _identify_missing_info(self, prompt: str, intent: str) -> List[str]:
+        """Identify potentially missing information"""
+        missing = []
         
-        if any(word in text_lower for word in ["list", "bullet", "numbered"]):
-            return "list"
-        elif any(word in text_lower for word in ["json", "structured", "data"]):
-            return "structured"
-        elif any(word in text_lower for word in ["table", "chart", "grid"]):
-            return "table"
-        elif intent == "creative":
-            return "narrative"
-        elif intent == "technical":
-            return "code"
-        else:
-            return "text"
+        # Check for vague terms
+        vague_terms = ["something", "anything", "stuff", "things", "it"]
+        if any(term in prompt.lower() for term in vague_terms):
+            missing.append("Vague references need clarification")
+        
+        # Check for missing context based on intent
+        if intent == "technical" and not re.search(r"context|background|use case", 
+                                                  prompt, re.IGNORECASE):
+            missing.append("Technical context might be helpful")
+        
+        if intent == "creative" and not re.search(r"style|tone|audience", 
+                                                 prompt, re.IGNORECASE):
+            missing.append("Creative direction could be specified")
+        
+        return missing
     
-    def apply_optimization(self, request: OptimizationRequest) -> Dict[str, Any]:
-        """DEVELOP: Apply optimization techniques"""
-        techniques = OptimizationTechniques.get_techniques_for_intent(request.intent)
-        applied_techniques = []
-        optimizations = {}
-        
-        for technique in techniques:
-            result = OptimizationTechniques.apply_technique(technique, request)
-            if result:
-                optimizations[technique] = result
-                applied_techniques.append(technique)
-        
+    def _deconstruct_prompt(self, prompt: str) -> Dict[str, Any]:
+        """Deconstruct prompt into components"""
         return {
-            "techniques_applied": applied_techniques,
-            "optimizations": optimizations,
-            "role": OptimizationTechniques.generate_role(request.intent),
-            "structure_guidance": OptimizationTechniques.build_structure_guidance(request.intent),
-            "context_enhancements": OptimizationTechniques.enhance_context(request),
-            "formatted_constraints": OptimizationTechniques.format_constraints(request.constraints)
+            "length": len(prompt),
+            "word_count": len(prompt.split()),
+            "has_questions": "?" in prompt,
+            "has_examples": "example" in prompt.lower(),
+            "complexity": "high" if len(prompt.split()) > 50 else "medium" if len(prompt.split()) > 20 else "low"
         }
-    
-    def assemble_prompt(self, optimization_data: Dict[str, Any], request: OptimizationRequest) -> str:
-        """DELIVER: Assemble final optimized prompt"""
-        components = []
-        
-        # Add role assignment
-        if "role" in optimization_data and optimization_data["role"]:
-            components.append(optimization_data["role"])
-        
-        # Add the original request with enhancements
-        enhanced_request = request.raw_input
-        
-        # Add context enhancements if any gaps were identified
-        if optimization_data.get("context_enhancements"):
-            components.append(f"Context: {optimization_data['context_enhancements']}")
-        
-        # Add structure guidance
-        if optimization_data.get("structure_guidance"):
-            components.append(f"Structure: {optimization_data['structure_guidance']}")
-        
-        # Add constraints
-        if optimization_data.get("formatted_constraints"):
-            components.append(optimization_data["formatted_constraints"])
-        
-        # Add the main request
-        components.append(f"Task: {enhanced_request}")
-        
-        # Add platform-specific optimizations
-        if request.platform == "chatgpt":
-            components.append("Please provide a comprehensive and well-structured response.")
-        elif request.platform == "claude":
-            components.append("Please think carefully and provide a thoughtful, detailed response.")
-        
-        return "\n\n".join(filter(None, components))
-    
-    def optimize_prompt(self, prompt_input: str, platform: str = "claude") -> tuple:
-        """Complete optimization pipeline"""
-        # Extract intent and create request
-        request = self.extract_intent(prompt_input)
-        request.platform = platform
-        
-        # Apply optimizations
-        optimization_data = self.apply_optimization(request)
-        
-        # Assemble final prompt
-        optimized_prompt = self.assemble_prompt(optimization_data, request)
-        
-        return optimized_prompt, optimization_data, request

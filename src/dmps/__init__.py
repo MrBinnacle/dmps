@@ -11,10 +11,11 @@ The DMPS system helps optimize AI prompts by:
 from .optimizer import PromptOptimizer
 from .engine import OptimizationEngine
 from .schema import OptimizationRequest, OptimizedResult, ValidationResult
-from .intent import IntentClassifier, GapAnalyzer
+from .intent import IntentClassifier
 from .techniques import OptimizationTechniques
 from .formatters import ConversationalFormatter, StructuredFormatter
 from .validation import InputValidator
+from .repl import DMPSShell
 
 __version__ = '0.1.0'
 __author__ = 'MrBinnacle'
@@ -29,11 +30,11 @@ __all__ = [
     'OptimizedResult',
     'ValidationResult',
     'IntentClassifier',
-    'GapAnalyzer',
     'OptimizationTechniques',
     'ConversationalFormatter',
     'StructuredFormatter',
-    'InputValidator'
+    'InputValidator',
+    'DMPSShell'
 ]
 
 # Convenience function for quick optimization
