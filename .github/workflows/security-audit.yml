@@ -1,0 +1,75 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install security tools
+      run: |
+        pip install bandit safety semgrep
+        pip install -e .
+    
+    - name: Bandit security scan
+      run: |
+        bandit -r src/ -f json -o bandit-report.json
+        bandit -r src/ --severity-level medium
+    
+    - name: Safety dependency scan
+      run: |
+        safety check --json --output safety-report.json
+        safety check
+    
+    - name: Semgrep security scan
+      run: |
+        semgrep --config=auto src/ --json --output=semgrep-report.json
+        semgrep --config=auto src/
+    
+    - name: Critical vulnerability regression test
+      run: |
+        python -c "
+        from dmps.security import SecurityConfig
+        from dmps.validation import InputValidator
+        
+        # Test path traversal protection
+        assert not SecurityConfig.is_safe_path('../../../etc/passwd'), 'Path traversal not blocked'
+        assert not SecurityConfig.is_safe_path('/etc/passwd'), 'Absolute path not blocked'
+        
+        # Test XSS detection
+        validator = InputValidator()
+        result = validator.validate_input('<script>alert(1)</script>test')
+        assert result.warnings, 'XSS not detected'
+        
+        # Test code injection detection
+        result = validator.validate_input('eval(malicious_code)')
+        assert result.warnings, 'Code injection not detected'
+        
+        print('All security tests passed')
+        "
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: '*-report.json'
+    
+    - name: Security alert on failure
+      if: failure()
+      run: |
+        echo "::error::Security vulnerability detected in scan"
+        exit 1

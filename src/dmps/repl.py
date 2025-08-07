@@ -4,12 +4,20 @@ REPL (Read-Eval-Print Loop) interface for DMPS.
 
 import sys
 import json
-from typing import Dict, Any
+import time
+import hashlib
+from typing import Final
 from .optimizer import PromptOptimizer
+from .security import SecurityConfig
+from .rbac import AccessControl, Role
 
 
 class DMPSShell:
     """Interactive REPL shell for DMPS"""
+    
+    # Valid settings for validation
+    _VALID_MODES: Final = frozenset({"conversational", "structured"})
+    _VALID_PLATFORMS: Final = frozenset({"claude", "chatgpt", "gemini", "generic"})
     
     def __init__(self):
         self.optimizer = PromptOptimizer()
@@ -19,10 +27,18 @@ class DMPSShell:
             "show_metadata": False
         }
         self.history = []
+        self.max_history = SecurityConfig.MAX_HISTORY_SIZE
+        self.request_count = 0
+        self.max_requests = SecurityConfig.MAX_REQUESTS_PER_SESSION
+        self.session_id = hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]
+        self.failed_attempts = 0
+        self.last_activity = time.time()
+        self._audit_log = []
     
     def start(self):
-        """Start the REPL shell"""
-        print("🚀 DMPS Interactive Shell")
+        """Start the REPL shell with security monitoring"""
+        self._log_security_event("session_start", {"session_id": self.session_id})
+        print("DMPS Interactive Shell")
         print("Type 'help' for commands, 'exit' to quit")
         print("=" * 50)
         
@@ -37,7 +53,12 @@ class DMPSShell:
                     print("Goodbye! 👋")
                     break
                 
-                self._process_command(user_input)
+                if self._validate_session():
+                    self._process_command(user_input)
+                    self.last_activity = time.time()
+                else:
+                    print("Session expired. Please restart.")
+                    break
                 
             except KeyboardInterrupt:
                 print("\nUse 'exit' to quit")
@@ -54,54 +75,92 @@ class DMPSShell:
             self.optimize_and_display(command)
     
     def handle_command(self, command: str):
-        """Handle command (for test compatibility)"""
+        """Handle command with RBAC validation"""
+        from .rbac import AccessControl, Role
+        
+        # Validate user role and command authorization
+        if not AccessControl.validate_command_access(Role.USER, command):
+            print(f"Access denied: {command}")
+            return
+        
         if command == "help":
             self._show_help()
         elif command.startswith('/'):
-            cmd_name = command[1:].split()[0]
-            if cmd_name == "unknown_command":
-                print(f"Unknown command: {command}")
-                return
+            print(f"Access denied: {command}")
+            return
         else:
             self._process_command(command)
     
     def _handle_meta_command(self, command: str):
-        """Handle meta commands (starting with .)"""
+        """Handle meta commands with RBAC validation"""
+        from .rbac import AccessControl, Role
+        
         parts = command[1:].split()
         cmd = parts[0].lower() if parts else ""
+        
+        # Comprehensive RBAC validation
+        if not AccessControl.validate_command_access(Role.USER, f".{cmd}"):
+            print(f"Access denied: {command}")
+            print("Type '.help' for available commands")
+            return
+        
+        # Additional validation for sensitive commands
+        if cmd in ['export', 'clear'] and not AccessControl.validate_file_operation(Role.USER, "write", "."):
+            print(f"Insufficient permissions for: {command}")
+            return
         
         if cmd == "help":
             self._show_help()
         elif cmd == "settings":
-            self._show_settings()
+            self._display_current_configuration()
         elif cmd == "set":
-            self._set_setting(parts[1:])
+            self._update_configuration_setting(parts[1:])
         elif cmd == "history":
             self._show_history()
         elif cmd == "clear":
             self._clear_history()
         elif cmd == "version":
             print("DMPS v0.1.0")
-        else:
-            print(f"Unknown command: {command}")
-            print("Type '.help' for available commands")
+        elif cmd == "metrics":
+            from .observability import dashboard
+            dashboard.print_session_summary()
+        elif cmd == "export":
+            filename = parts[1] if len(parts) > 1 else "repl_metrics.json"
+            from .observability import dashboard
+            dashboard.export_metrics(filename)
     
     def optimize_and_display(self, prompt: str):
-        """Optimize a prompt and display results"""
+        """Optimize a prompt and display results with security validation"""
         try:
+            # Security validation
+            if not self._validate_command_security(prompt):
+                print("❌ Command blocked by security policy")
+                return
+            
+            # Rate limiting check
+            self.request_count += 1
+            if self.request_count > self.max_requests:
+                self._log_security_event("rate_limit_exceeded", {"request_count": self.request_count})
+                print("❌ Rate limit exceeded. Please restart the session.")
+                return
+            
             result, validation = self.optimizer.optimize(
                 prompt, 
                 mode=self.settings["mode"],
                 platform=self.settings["platform"]
             )
             
-            # Store in history
+            # Store in history with size limit
             self.history.append({
                 "input": prompt,
                 "result": result,
                 "validation": validation,
                 "settings": self.settings.copy()
             })
+            
+            # Maintain history size limit
+            if len(self.history) > self.max_history:
+                self.history = self.history[-self.max_history:]
             
             # Show warnings if any
             if validation.warnings:
@@ -120,13 +179,34 @@ class DMPSShell:
                 print("\n📊 Metadata:")
                 print(f"   • Improvements: {len(result.improvements)}")
                 print(f"   • Methodology: {result.methodology_applied}")
+                
+                # Show token metrics
+                if 'token_metrics' in result.metadata:
+                    metrics = result.metadata['token_metrics']
+                    print(f"   • Token Reduction: {metrics['token_reduction']}")
+                    print(f"   • Cost Estimate: ${metrics['cost_estimate']:.4f}")
+                
+                # Show evaluation metrics
+                if 'evaluation' in result.metadata:
+                    eval_data = result.metadata['evaluation']
+                    print(f"   • Quality Score: {eval_data['overall_score']}")
+                    print(f"   • Token Efficiency: {eval_data['token_efficiency']}")
+                
                 if result.improvements:
                     print("   • Applied:")
                     for improvement in result.improvements:
                         print(f"     - {improvement}")
             
+        except KeyboardInterrupt:
+            print("\n⚠️ Operation cancelled")
+        except (ValueError, TypeError) as e:
+            from .error_handler import error_handler
+            user_msg = error_handler.handle_error(e, "optimize_and_display")
+            print(f"❌ {user_msg}")
         except Exception as e:
-            print(f"❌ Error: {e}")
+            from .error_handler import error_handler
+            user_msg = error_handler.handle_error(e, "optimize_and_display")
+            print(f"❌ {user_msg}")
     
     def _show_help(self):
         """Show help information"""
@@ -143,6 +223,8 @@ Meta Commands:
   .history         - Show optimization history
   .clear           - Clear history
   .version         - Show version
+  .metrics         - Show context engineering metrics
+  .export [file]   - Export metrics to JSON file
   exit/quit        - Exit the shell
 
 Settings:
@@ -157,35 +239,35 @@ Examples:
         """
         print(help_text)
     
-    def _show_settings(self):
-        """Show current settings"""
-        print("⚙️  Current Settings:")
-        for key, value in self.settings.items():
-            print(f"   • {key}: {value}")
+    def _display_current_configuration(self):
+        """Display current REPL configuration settings"""
+        print("⚙️  Current Configuration:")
+        for setting_name, setting_value in self.settings.items():
+            print(f"   • {setting_name}: {setting_value}")
     
     def cmd_settings(self, args):
         """Settings command for test compatibility"""
         self._show_settings()
     
-    def _set_setting(self, args):
-        """Set a configuration setting"""
-        if len(args) < 2:
-            print("Usage: .set <key> <value>")
+    def _update_configuration_setting(self, command_args):
+        """Update a specific configuration setting"""
+        if len(command_args) < 2:
+            print("Usage: .set <setting_name> <setting_value>")
             return
         
-        key, value = args[0], args[1]
+        setting_name, new_value = command_args[0], command_args[1]
         
-        if key == "mode" and value in ["conversational", "structured"]:
-            self.settings["mode"] = value
-            print(f"✅ Set mode to: {value}")
-        elif key == "platform" and value in ["claude", "chatgpt", "gemini", "generic"]:
-            self.settings["platform"] = value
-            print(f"✅ Set platform to: {value}")
-        elif key == "show_metadata" and value.lower() in ["true", "false"]:
-            self.settings["show_metadata"] = value.lower() == "true"
-            print(f"✅ Set show_metadata to: {value}")
+        if setting_name == "mode" and new_value in self._VALID_MODES:
+            self.settings["mode"] = new_value
+            print(f"✅ Updated mode to: {new_value}")
+        elif setting_name == "platform" and new_value in self._VALID_PLATFORMS:
+            self.settings["platform"] = new_value
+            print(f"✅ Updated platform to: {new_value}")
+        elif setting_name == "show_metadata" and new_value.lower() in ["true", "false"]:
+            self.settings["show_metadata"] = new_value.lower() == "true"
+            print(f"✅ Updated show_metadata to: {new_value}")
         else:
-            print(f"❌ Invalid setting: {key}={value}")
+            print(f"❌ Invalid configuration: {setting_name}={new_value}")
             print("Valid settings: mode, platform, show_metadata")
     
     def cmd_set(self, args):
@@ -237,30 +319,105 @@ Examples:
         sys.exit(0)
     
     def cmd_save(self, args):
-        """Save command for test compatibility"""
+        """Save command with path traversal protection"""
         if not args:
             print("Usage: save <filename>")
             return
         
         filename = args[0]
         
-        # Convert history to serializable format
-        serializable_history = []
-        for item in self.history:
-            serializable_item = {
-                "input": item["input"],
-                "optimized_prompt": item["result"].optimized_prompt if "result" in item else "",
-                "improvements": item["result"].improvements if "result" in item else [],
-                "settings": item.get("settings", {})
-            }
-            serializable_history.append(serializable_item)
-        
         try:
-            with open(filename, 'w') as f:
+            from pathlib import Path
+            
+            # Validate path before resolving to prevent traversal
+            if not SecurityConfig.validate_file_path(filename):
+                print(f"❌ Invalid file path: {filename}")
+                return
+            
+            # Additional RBAC validation for save operation
+            if not AccessControl.validate_file_operation(Role.USER, "write", filename):
+                print(f"❌ Access denied for file operation: {filename}")
+                return
+            
+            path = Path(filename).resolve()
+            
+            # Critical: Re-validate resolved path to prevent bypass
+            if not SecurityConfig.validate_file_path(str(path)):
+                print(f"❌ Unsafe resolved path: {filename}")
+                return
+            
+            # Validate file extension
+            if not SecurityConfig.validate_file_extension(filename):
+                print("❌ Only .json and .txt files are allowed")
+                return
+            
+            # Sanitize filename
+            filename = SecurityConfig.sanitize_filename(filename)
+            
+            # Convert history to serializable format
+            serializable_history = []
+            for item in self.history:
+                serializable_item = {
+                    "input": item["input"],
+                    "optimized_prompt": item["result"].optimized_prompt if "result" in item else "",
+                    "improvements": item["result"].improvements if "result" in item else [],
+                    "settings": item.get("settings", {})
+                }
+                serializable_history.append(serializable_item)
+            
+            # Ensure parent directory exists
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(path, 'w', encoding='utf-8') as f:
                 json.dump(serializable_history, f, indent=2)
             print(f"💾 History saved to {filename}")
-        except Exception as e:
+            
+        except (OSError, ValueError, json.JSONEncodeError) as e:
+            self._log_security_event("file_operation_failed", {"error": str(e), "filename": filename})
             print(f"❌ Error saving: {e}")
+    
+    def _validate_session(self) -> bool:
+        """Validate session security constraints"""
+        # Session timeout check (30 minutes)
+        if time.time() - self.last_activity > 1800:
+            self._log_security_event("session_timeout", {"session_id": self.session_id})
+            return False
+        
+        # Rate limiting validation
+        if self.request_count > self.max_requests:
+            self._log_security_event("rate_limit_exceeded", {"session_id": self.session_id})
+            return False
+        
+        return True
+    
+    def _log_security_event(self, event_type: str, details: Dict[str, Any]):
+        """Log security events for audit trail"""
+        event = {
+            "timestamp": time.time(),
+            "session_id": self.session_id,
+            "event_type": event_type,
+            "details": details
+        }
+        self._audit_log.append(event)
+        
+        # Maintain audit log size
+        if len(self._audit_log) > 1000:
+            self._audit_log = self._audit_log[-1000:]
+    
+    def _validate_command_security(self, command: str) -> bool:
+        """Validate command against security policies"""
+        # Block potentially dangerous commands
+        dangerous_patterns = ['eval', 'exec', 'import', '__', 'subprocess']
+        if any(pattern in command.lower() for pattern in dangerous_patterns):
+            self._log_security_event("dangerous_command_blocked", {"command": command})
+            return False
+        
+        # RBAC validation
+        if not AccessControl.validate_command_access(Role.USER, command):
+            self._log_security_event("access_denied", {"command": command})
+            return False
+        
+        return True
 
 
 def main():

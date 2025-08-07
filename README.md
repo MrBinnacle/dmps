@@ -63,7 +63,7 @@ pip install -e .
 ```python
 from dmps import optimize_prompt
 
-# Simple optimization
+# Simple optimization with automatic security validation
 result = optimize_prompt("Write a story about AI")
 print(result)
 ```
@@ -80,29 +80,49 @@ result, validation = optimizer.optimize(
     platform="claude"
 )
 
+# Check for security warnings
+if validation.warnings:
+    print("Security warnings:", validation.warnings)
+
 print(result.optimized_prompt)
 ```
+
+## 🛡️ Security Features
+
+DMPS includes comprehensive security protections:
+
+- **Path Traversal Protection**: Automatic blocking of dangerous file paths
+- **Input Sanitization**: XSS and code injection prevention
+- **RBAC**: Role-based access control for commands
+- **Rate Limiting**: Protection against abuse
+- **Secure Error Handling**: No information leakage
+
+See [Security Guide](docs/SECURITY_GUIDE.md) for complete details.
 
 ### CLI Usage
 
 ```bash
-# After pip install dmps
+# Basic usage with automatic security validation
 dmps "Your prompt here" --mode conversational --platform claude
 
-# Or using module syntax
-python -m dmps "Your prompt here" --mode conversational --platform claude
+# File input/output (automatically validates paths)
+dmps --file input.txt --output results.txt
 
-# Interactive mode
+# Interactive mode with security monitoring
 dmps --interactive
 
-# REPL shell mode
-dmps-shell
-# or
+# REPL shell mode with RBAC protection
 dmps --shell
 
 # Help
 dmps --help
 ```
+
+**Security Notes:**
+- File paths are automatically validated for safety
+- Input is sanitized to prevent injection attacks
+- Only safe file extensions (.txt, .json) are allowed for output
+- Rate limiting prevents abuse in interactive modes
 
 ## Development
 
