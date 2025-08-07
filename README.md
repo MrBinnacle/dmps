@@ -95,6 +95,11 @@ python -m dmps "Your prompt here" --mode conversational --platform claude
 # Interactive mode
 dmps --interactive
 
+# REPL shell mode
+dmps-shell
+# or
+dmps --shell
+
 # Help
 dmps --help
 ```

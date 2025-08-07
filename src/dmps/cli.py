@@ -48,6 +48,11 @@ Examples:
         action="store_true",
         help="Start interactive mode"
     )
+    input_group.add_argument(
+        "--shell", "-s",
+        action="store_true",
+        help="Start REPL shell mode"
+    )
     
     # Output options
     parser.add_argument(
@@ -223,6 +228,11 @@ def main():
         # Determine input source
         if args.interactive:
             interactive_mode()
+            return
+        
+        if args.shell:
+            from .repl import main as repl_main
+            repl_main()
             return
         
         if args.file:

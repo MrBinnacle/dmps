@@ -41,8 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- REPL interface (dmps-shell command)
+- Interactive shell with history and session management
+- Batch processing from files in REPL
+- Statistics and analytics in shell mode
+- Session save/load functionality
+
 ### Planned
-- REPL interface (dmps shell)
 - VSCode extension
 - LangChain integration
 - Semantic Kernel support
