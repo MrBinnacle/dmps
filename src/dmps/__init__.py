@@ -26,7 +26,7 @@ from .validation import InputValidator
 
 __version__ = "0.2.1"
 __author__ = "MrBinnacle"
-__email__ = "your.email@example.com"
+__email__ = "noreply@dmps-project.org"
 __description__ = "Dual-Mode Prompt System for AI prompt optimization"
 
 # Main API
