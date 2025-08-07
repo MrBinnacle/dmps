@@ -6,6 +6,7 @@ DMPS CLI Implementation
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 from .optimizer import PromptOptimizer
 
 
@@ -27,20 +28,24 @@ Examples:
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument("prompt", nargs="?", help="Prompt to optimize")
     input_group.add_argument("--file", "-f", help="Read prompt from file")
-    input_group.add_argument("--interactive", "-i", action="store_true",
-                           help="Start interactive mode")
-    input_group.add_argument("--shell", "-s", action="store_true",
-                           help="Start REPL shell mode")
+    input_group.add_argument(
+        "--interactive", "-i", action="store_true",
+        help="Start interactive mode")
+    input_group.add_argument(
+        "--shell", "-s", action="store_true",
+        help="Start REPL shell mode")
 
-    parser.add_argument("--mode", "-m", 
-                       choices=["conversational", "structured"],
-                       default="conversational", help="Output format mode")
-    parser.add_argument("--platform", "-p",
-                       choices=["claude", "chatgpt", "gemini", "generic"],
-                       default="claude", help="Target AI platform")
+    parser.add_argument(
+        "--mode", "-m", choices=["conversational", "structured"],
+        default="conversational", help="Output format mode")
+    parser.add_argument(
+        "--platform", "-p",
+        choices=["claude", "chatgpt", "gemini", "generic"],
+        default="claude", help="Target AI platform")
     parser.add_argument("--output", "-o", help="Output file")
-    parser.add_argument("--quiet", "-q", action="store_true",
-                       help="Suppress progress messages")
+    parser.add_argument(
+        "--quiet", "-q", action="store_true",
+        help="Suppress progress messages")
     parser.add_argument("--version", action="version", version="DMPS 0.1.0")
 
     return parser
@@ -58,8 +63,8 @@ def read_file_content(filepath: str) -> str:
         sys.exit(1)
 
 
-def write_output(content: str, output_file: str = None, 
-                quiet: bool = False):
+def write_output(content: str, output_file: Optional[str] = None,
+                 quiet: bool = False):
     """Write output to file or stdout"""
     try:
         if output_file:
@@ -166,7 +171,7 @@ def main():
         if args.file:
             prompt_input = read_file_content(args.file)
         else:
-            prompt_input = args.prompt or ""
+            prompt_input = args.prompt if args.prompt is not None else ""
 
         if not prompt_input:
             print("Error: No prompt provided", file=sys.stderr)
