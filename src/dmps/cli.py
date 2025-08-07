@@ -48,6 +48,12 @@ Examples:
         "--quiet", "-q", action="store_true",
         help="Suppress progress messages")
     parser.add_argument("--version", action="version", version="DMPS 0.1.0")
+    parser.add_argument(
+        "--metrics", action="store_true",
+        help="Show context engineering metrics")
+    parser.add_argument(
+        "--export-metrics", metavar="FILE",
+        help="Export metrics to JSON file")
 
     return parser
 
@@ -231,11 +237,30 @@ def main():
                 print(f"  - {warning}", file=sys.stderr)
 
         write_output(result.optimized_prompt, args.output, args.quiet)
+        
+        # Handle metrics options
+        if args.metrics:
+            from .observability import dashboard
+            dashboard.print_session_summary()
+        
+        if args.export_metrics:
+            from .observability import dashboard
+            dashboard.export_metrics(args.export_metrics)
 
         if not args.quiet:
             techniques_count = len(result.improvements)
             print(f"Optimization complete! Applied {techniques_count} "
                   f"improvements.", file=sys.stderr)
+            
+            # Show token metrics if available
+            if 'token_metrics' in result.metadata:
+                metrics = result.metadata['token_metrics']
+                print(f"Token reduction: {metrics['token_reduction']}, "
+                      f"Cost estimate: ${metrics['cost_estimate']:.4f}", file=sys.stderr)
+            
+            # Show evaluation warnings
+            if 'evaluation' in result.metadata and result.metadata['evaluation']['degradation_detected']:
+                print("⚠️ Quality degradation detected", file=sys.stderr)
 
     except KeyboardInterrupt:
         print("\nOperation cancelled by user", file=sys.stderr)

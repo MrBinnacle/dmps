@@ -3,11 +3,14 @@ Main orchestrator for prompt optimization.
 """
 
 import json
+import uuid
 from typing import Tuple, Literal, Final
 from .schema import OptimizedResult, ValidationResult
 from .engine import OptimizationEngine
 from .validation import InputValidator
 from .formatters import ConversationalFormatter, StructuredFormatter
+from .token_tracker import token_tracker
+from .evaluation import context_evaluator
 
 
 class PromptOptimizer:
@@ -42,7 +45,12 @@ class PromptOptimizer:
     def optimize(
         self, prompt_input: str, mode: str = "conversational", platform: str = "claude"
     ) -> Tuple[OptimizedResult, ValidationResult]:
-        """Main optimization entry point"""
+        """Main optimization entry point with token tracking and evaluation"""
+        
+        # Start token tracking
+        operation_id = str(uuid.uuid4())[:8]
+        trace_context = token_tracker.start_trace(operation_id, prompt_input)
+        
         validation = self.validator.validate_input(prompt_input, mode)
         if not validation.is_valid:
             return self._create_error_result(validation.errors, mode), validation
@@ -67,6 +75,40 @@ class PromptOptimizer:
             result = formatter.format(
                 optimization_data, request, optimized_prompt
             )
+            
+            # Complete token tracking
+            techniques_applied = optimization_data.get("techniques_applied", [])
+            trace = token_tracker.complete_trace(
+                trace_context, optimized_prompt, techniques_applied, platform
+            )
+            
+            # Evaluate context engineering effectiveness
+            evaluation = context_evaluator.evaluate(
+                prompt_input, optimized_prompt,
+                trace_context["original_tokens"], 
+                token_tracker.estimate_tokens(optimized_prompt)
+            )
+            
+            # Add tracking metadata to result
+            result.metadata.update({
+                "token_metrics": {
+                    "original_tokens": trace_context["original_tokens"],
+                    "optimized_tokens": trace.metrics.input_tokens,
+                    "token_reduction": trace.token_reduction,
+                    "cost_estimate": trace.metrics.cost_estimate
+                },
+                "evaluation": {
+                    "overall_score": evaluation.overall_score,
+                    "token_efficiency": evaluation.token_efficiency,
+                    "degradation_detected": evaluation.degradation_detected
+                },
+                "operation_id": operation_id
+            })
+            
+            # Add evaluation warnings if degradation detected
+            if evaluation.degradation_detected:
+                validation.warnings.append("Quality degradation detected in optimization")
+                validation.warnings.extend(evaluation.recommendations)
             
             return result, validation
         

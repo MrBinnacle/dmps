@@ -101,6 +101,13 @@ class DMPSShell:
             self._clear_history()
         elif cmd == "version":
             print("DMPS v0.1.0")
+        elif cmd == "metrics":
+            from .observability import dashboard
+            dashboard.print_session_summary()
+        elif cmd == "export":
+            filename = parts[1] if len(parts) > 1 else "repl_metrics.json"
+            from .observability import dashboard
+            dashboard.export_metrics(filename)
     
     def optimize_and_display(self, prompt: str):
         """Optimize a prompt and display results"""
@@ -146,6 +153,19 @@ class DMPSShell:
                 print("\n📊 Metadata:")
                 print(f"   • Improvements: {len(result.improvements)}")
                 print(f"   • Methodology: {result.methodology_applied}")
+                
+                # Show token metrics
+                if 'token_metrics' in result.metadata:
+                    metrics = result.metadata['token_metrics']
+                    print(f"   • Token Reduction: {metrics['token_reduction']}")
+                    print(f"   • Cost Estimate: ${metrics['cost_estimate']:.4f}")
+                
+                # Show evaluation metrics
+                if 'evaluation' in result.metadata:
+                    eval_data = result.metadata['evaluation']
+                    print(f"   • Quality Score: {eval_data['overall_score']}")
+                    print(f"   • Token Efficiency: {eval_data['token_efficiency']}")
+                
                 if result.improvements:
                     print("   • Applied:")
                     for improvement in result.improvements:
@@ -177,6 +197,8 @@ Meta Commands:
   .history         - Show optimization history
   .clear           - Clear history
   .version         - Show version
+  .metrics         - Show context engineering metrics
+  .export [file]   - Export metrics to JSON file
   exit/quit        - Exit the shell
 
 Settings:
