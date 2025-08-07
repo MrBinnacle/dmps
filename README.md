@@ -15,7 +15,7 @@ A secure, enterprise-grade Python package for AI prompt optimization using the 4
 - **Gap Analysis**: Identifies missing information and optimization opportunities
 - **4-D Optimization**: Systematic optimization using proven methodologies
 - **Dual Output Modes**: Conversational and structured JSON formats
-- **Platform Support**: Optimized for Claude, ChatGPT, Gemini, and generic platforms
+- **Platform Support**: Optimized for ChatGPT, HuggingFace, and local models with automatic fallback
 
 ### Security & Performance (v0.2.1)
 - **Enterprise Security**: Path traversal protection, RBAC, input sanitization
@@ -76,8 +76,12 @@ pip install -e .
 ```python
 from dmps import optimize_prompt
 
-# Simple optimization with automatic security validation
-result = optimize_prompt("Write a story about AI")
+# OpenAI-powered optimization (requires OPENAI_API_KEY)
+result = optimize_prompt("Write a story about AI", platform="chatgpt")
+print(result)
+
+# HuggingFace-powered optimization (requires HUGGINGFACE_API_KEY)
+result = optimize_prompt("Debug this code", platform="huggingface")
 print(result)
 ```
 
@@ -138,8 +142,11 @@ DMPS includes comprehensive security protections:
 ### CLI Usage
 
 ```bash
-# Basic usage with automatic security validation
-dmps "Your prompt here" --mode conversational --platform claude
+# Basic usage with OpenAI
+dmps "Your prompt here" --mode conversational --platform chatgpt
+
+# Using HuggingFace models
+dmps "Your prompt here" --mode structured --platform huggingface
 
 # File input/output (automatically validates paths)
 dmps --file input.txt --output results.txt

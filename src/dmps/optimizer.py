@@ -70,8 +70,16 @@ class PromptOptimizer:
             request.intent = cached_intent  # Use cached result
             request.platform = platform
 
+            # Use LLM router for actual optimization
+            from .llm_client import llm_router
+
+            llm_response = llm_router.generate(
+                f"Optimize this prompt for {platform}: {sanitized_input}",
+                platform=platform,
+            )
+
             optimization_data = self.engine.apply_optimization(request)
-            optimized_prompt = self.engine.assemble_prompt(optimization_data, request)
+            optimized_prompt = llm_response.content
 
             formatter = self._FORMATTERS[mode]
             result = formatter.format(optimization_data, request, optimized_prompt)
@@ -95,14 +103,19 @@ class PromptOptimizer:
                 {
                     "token_metrics": {
                         "original_tokens": trace_context["original_tokens"],
-                        "optimized_tokens": trace.metrics.input_tokens,
+                        "optimized_tokens": llm_response.tokens_used,
                         "token_reduction": trace.token_reduction,
-                        "cost_estimate": trace.metrics.cost_estimate,
+                        "cost_estimate": llm_response.cost_estimate,
                     },
                     "evaluation": {
                         "overall_score": evaluation.overall_score,
                         "token_efficiency": evaluation.token_efficiency,
                         "degradation_detected": evaluation.degradation_detected,
+                    },
+                    "llm_metadata": {
+                        "model": llm_response.model,
+                        "response_time": llm_response.response_time,
+                        "platform": platform,
                     },
                     "operation_id": operation_id,
                 }

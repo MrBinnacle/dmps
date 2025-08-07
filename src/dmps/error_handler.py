@@ -44,8 +44,12 @@ class SecureErrorHandler:
 
         # Actionable error messages for debugging
         actionable_messages = {
-            FileNotFoundError: "File not found. Check the file path and ensure it exists.",
-            PermissionError: "Access denied. Verify file permissions and path validity.",
+            FileNotFoundError: (
+                "File not found. Check the file path and ensure it exists."
+            ),
+            PermissionError: (
+                "Access denied. Verify file permissions and path validity."
+            ),
             ValueError: "Invalid input. Please check your input format and try again.",
             OSError: "System operation failed. Check disk space and file permissions.",
             ImportError: "Module import failed. Ensure all dependencies are installed.",

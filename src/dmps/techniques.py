@@ -140,7 +140,10 @@ class OptimizationTechniques:
             return "Unknown technique"
 
         descriptions = {
-            "develop_clarity": "Enhanced clarity and specificity by replacing vague terms and adding context",
+            "develop_clarity": (
+                "Enhanced clarity and specificity by replacing vague terms "
+                "and adding context"
+            ),
             "design_structure": "Optimized structure for target platform and intent",
             "deliver_format": "Applied final formatting and output type optimization",
         }
