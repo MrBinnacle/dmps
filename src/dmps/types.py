@@ -2,7 +2,7 @@
 Centralized type definitions for optional dependencies
 """
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, List, Protocol, Union, runtime_checkable
 
 if TYPE_CHECKING:
     from langchain.schema import BaseMessage
@@ -18,7 +18,7 @@ else:
 class LLMPipeline(Protocol):
     """Protocol for HuggingFace pipeline interface"""
 
-    def __call__(self, text: str, **kwargs) -> list[dict[str, Any]]:
+    def __call__(self, text: str, **kwargs) -> List[Dict[str, Any]]:
         ...
 
 
@@ -31,5 +31,5 @@ class HTTPClient(Protocol):
 
 
 # Type aliases for cleaner code
-OptionalPipeline = Pipeline | None
-OptionalHTTPClient = HTTPClient | None
+OptionalPipeline = Union[Pipeline, None]
+OptionalHTTPClient = Union[HTTPClient, None]

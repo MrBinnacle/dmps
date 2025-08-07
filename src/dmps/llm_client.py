@@ -111,7 +111,7 @@ class BaseLangChainClient(LLMClient):
             try:
                 # Import within guarded scope to satisfy type checkers
                 from langchain.schema import (
-                    HumanMessage as _HumanMessage,  # type: ignore[reportMissingImports]
+                    HumanMessage as _HumanMessage,  # type: ignore
                 )
 
                 message = _HumanMessage(content=prompt)
@@ -130,7 +130,8 @@ class BaseLangChainClient(LLMClient):
             except Exception:
                 pass
 
-        return MockLLMClient(f"{self.model}-fallback").generate(prompt, **kwargs)
+        fallback_model = f"{self.model}-fallback"
+        return MockLLMClient(fallback_model).generate(prompt, **kwargs)
 
 
 class OpenAIClient(BaseLangChainClient):
