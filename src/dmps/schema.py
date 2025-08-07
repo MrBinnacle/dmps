@@ -3,12 +3,13 @@ Core data structures for the Dual-Mode Prompt System (DMPS).
 """
 
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 
 @dataclass
 class OptimizationRequest:
     """Core request structure for optimization"""
+
     raw_input: str
     intent: str
     output_type: str
@@ -20,6 +21,7 @@ class OptimizationRequest:
 @dataclass
 class OptimizedResult:
     """Result structure for optimized prompts"""
+
     optimized_prompt: str
     improvements: List[str]
     methodology_applied: str
@@ -30,6 +32,7 @@ class OptimizedResult:
 @dataclass
 class ValidationResult:
     """Validation result structure"""
+
     is_valid: bool
     errors: List[str]
     warnings: List[str]

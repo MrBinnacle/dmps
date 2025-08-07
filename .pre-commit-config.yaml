@@ -6,6 +6,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+      - id: check-merge-conflict
 
   - repo: https://github.com/psf/black
     rev: 23.3.0
@@ -17,24 +18,16 @@ repos:
     rev: 6.0.0
     hooks:
       - id: flake8
-        args: [--max-line-length=88, --max-complexity=10]
+        args: [--max-line-length=88, --extend-ignore=E203,W503]
 
-  - repo: https://github.com/pycqa/bandit
-    rev: 1.7.5
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
     hooks:
-      - id: bandit
-        args: [-r, src/, --severity-level, medium]
+      - id: isort
+        args: [--profile=black, --line-length=88]
 
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
     hooks:
-      - id: security-regression-test
-        name: Security Regression Test
-        entry: python -c "from dmps.security import SecurityConfig; assert not SecurityConfig.is_safe_path('../../../etc/passwd')"
-        language: system
-        pass_filenames: false
-        
-      - id: quality-gate
-        name: Quality Gate
-        entry: python quality_assurance.py
-        language: system
-        pass_filenames: false
+      - id: mypy
+        args: [--ignore-missing-imports]

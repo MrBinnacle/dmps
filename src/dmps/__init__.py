@@ -15,47 +15,55 @@ The DMPS system helps optimize AI prompts by:
 4. DELIVERING formatted output in conversational or structured modes
 """
 
-from .optimizer import PromptOptimizer
 from .engine import OptimizationEngine
-from .schema import OptimizationRequest, OptimizedResult, ValidationResult
-from .intent import IntentClassifier
-from .techniques import OptimizationTechniques
 from .formatters import ConversationalFormatter, StructuredFormatter
-from .validation import InputValidator
+from .intent import IntentClassifier
+from .optimizer import PromptOptimizer
 from .repl import DMPSShell
+from .schema import OptimizationRequest, OptimizedResult, ValidationResult
+from .techniques import OptimizationTechniques
+from .validation import InputValidator
 
-__version__ = '0.1.0'
-__author__ = 'MrBinnacle'
-__email__ = 'your.email@example.com'
-__description__ = 'Dual-Mode Prompt System for AI prompt optimization'
+__version__ = "0.1.0"
+__author__ = "MrBinnacle"
+__email__ = "your.email@example.com"
+__description__ = "Dual-Mode Prompt System for AI prompt optimization"
 
 # Main API
 __all__ = [
-    'PromptOptimizer',
-    'OptimizationEngine', 
-    'OptimizationRequest',
-    'OptimizedResult',
-    'ValidationResult',
-    'IntentClassifier',
-    'OptimizationTechniques',
-    'ConversationalFormatter',
-    'StructuredFormatter',
-    'InputValidator',
-    'DMPSShell'
+    "PromptOptimizer",
+    "OptimizationEngine",
+    "OptimizationRequest",
+    "OptimizedResult",
+    "ValidationResult",
+    "IntentClassifier",
+    "OptimizationTechniques",
+    "ConversationalFormatter",
+    "StructuredFormatter",
+    "InputValidator",
+    "DMPSShell",
 ]
 
 # Convenience function for quick optimization
-def optimize_prompt(user_prompt: str, output_mode: str = "conversational", target_platform: str = "claude"):
+
+
+def optimize_prompt(
+    user_prompt: str,
+    output_mode: str = "conversational",
+    target_platform: str = "claude",
+):
     """Quick optimization function following naming conventions
-    
+
     Args:
         user_prompt: The input prompt to optimize
         output_mode: Format mode (conversational/structured)
         target_platform: AI platform (claude/chatgpt/gemini/generic)
-    
+
     Returns:
         Optimized prompt string
     """
     prompt_optimizer = PromptOptimizer()
-    optimization_result, validation_result = prompt_optimizer.optimize(user_prompt, output_mode, target_platform)
+    optimization_result, validation_result = prompt_optimizer.optimize(
+        user_prompt, output_mode, target_platform
+    )
     return optimization_result.optimized_prompt
