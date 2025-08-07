@@ -1,0 +1,18 @@
+{
+  "include": [
+    "src"
+  ],
+  "extraPaths": [
+    "src"
+  ],
+  "pythonVersion": "3.8",
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "stubPath": "./typings",
+  "venvPath": ".",
+  "executionEnvironments": [
+    {
+      "root": "src"
+    }
+  ]
+}
