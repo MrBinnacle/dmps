@@ -12,19 +12,19 @@
 
 ## 🎯 The 60-Second Pitch
 
-**PROBLEM**: (One sentence - what specific pain point does this solve?)
+**FUNDAMENTAL PROBLEM**: (One sentence - what basic human need does this serve?)
 _________________________________________________________________
 
-**SOLUTION**: (One sentence - how does DMPS solve it?)
+**SIMPLEST SOLUTION**: (One sentence - what's the most basic way to solve this?)
 _________________________________________________________________
 
-**MARKET**: (One sentence - who pays and how much?)
+**EVIDENCE**: (One sentence - what concrete proof shows this problem exists?)
 _________________________________________________________________
 
-**ADVANTAGE**: (One sentence - why can't competitors copy this?)
+**CORE ADVANTAGE**: (One sentence - what fundamental constraint gives you an edge?)
 _________________________________________________________________
 
-**PROOF**: (One sentence - what evidence shows this is needed?)
+**VALUE PROOF**: (One sentence - how will you measure if this actually helps?)
 _________________________________________________________________
 
 ---

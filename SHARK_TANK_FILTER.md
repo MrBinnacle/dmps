@@ -8,14 +8,16 @@
 
 ## 🦈 The Five Sharks
 
-### Shark 1: **The Market Realist**
+### Shark 1: **The Market Realist** (First Principles Enhanced)
 **Question**: "Who will actually pay for this?"
 
-**Killer Questions**:
+**First Principles Killer Questions**:
+- What fundamental human need does this serve? (Not just "users want this")
 - Have you talked to 5 real users who said they'd pay for this?
 - What's the total addressable market? (If <$10M, probably not worth it)
 - Why hasn't someone with more resources already built this?
-- What's your evidence this problem is painful enough to switch tools?
+- What basic economic principle makes this valuable?
+- If you stripped away all assumptions, what core problem remains?
 
 **Instant Rejection Criteria**:
 - "Users might want this" (vs "Users are begging for this")
@@ -25,14 +27,16 @@
 
 ---
 
-### Shark 2: **The Technical Skeptic**
+### Shark 2: **The Technical Skeptic** (First Principles Enhanced)
 **Question**: "Can this actually be built well?"
 
-**Killer Questions**:
-- What's the minimum viable implementation? (If >2 weeks, too complex)
+**First Principles Killer Questions**:
+- What's the simplest possible solution that could work?
+- What are you assuming about the technology that might not be true?
+- If you had to rebuild this from scratch, what would you keep?
 - What are the 3 hardest technical challenges?
 - How will this scale to 10,000 users?
-- What happens when this breaks at 3am?
+- What's the minimum viable implementation? (If >2 weeks, too complex)
 
 **Instant Rejection Criteria**:
 - Requires breakthrough research
@@ -42,14 +46,16 @@
 
 ---
 
-### Shark 3: **The Competitive Analyst**
+### Shark 3: **The Competitive Analyst** (First Principles Enhanced)
 **Question**: "Why won't Google/OpenAI/Microsoft crush this?"
 
-**Killer Questions**:
+**First Principles Killer Questions**:
+- What fundamental constraint prevents others from doing this?
 - What's your unfair advantage that big tech can't replicate?
 - How long before competitors copy this? (If <6 months, not defensible)
 - What network effects or data moats does this create?
-- Why are you uniquely positioned to build this?
+- What would have to be true for you to have a sustainable advantage?
+- If you were Google, why wouldn't you build this?
 
 **Instant Rejection Criteria**:
 - Easily replicable by existing players
@@ -59,14 +65,16 @@
 
 ---
 
-### Shark 4: **The User Experience Executioner**
+### Shark 4: **The User Experience Executioner** (First Principles Enhanced)
 **Question**: "Will users actually use this daily?"
 
-**Killer Questions**:
+**First Principles Killer Questions**:
+- What basic human behavior does this align with?
 - Does this solve a daily pain point or a once-per-year problem?
 - How many clicks/steps to get value? (If >3, too complex)
 - What's the learning curve? (If >5 minutes, too steep)
-- Does this create new problems while solving old ones?
+- If users had to pay per use, would they still use this?
+- What's the simplest possible user experience?
 
 **Instant Rejection Criteria**:
 - Solves edge cases, not core workflows
@@ -76,14 +84,17 @@
 
 ---
 
-### Shark 5: **The Business Model Destroyer**
+### Shark 5: **The Business Model Destroyer** (First Principles Enhanced)
 **Question**: "How does this make DMPS money?"
 
-**Killer Questions**:
+**First Principles Killer Questions**:
+- What fundamental economic value does this create?
 - Does this increase user retention/engagement?
 - Does this enable premium pricing?
 - Does this reduce churn or acquisition costs?
 - What's the ROI calculation for building this?
+- If this were a separate company, would it be profitable?
+- What basic economic principle makes this valuable?
 
 **Instant Rejection Criteria**:
 - "It's good for users" but no business impact

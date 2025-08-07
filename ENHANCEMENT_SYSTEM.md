@@ -2,18 +2,26 @@
 
 ## How to Turn Ideas into Features
 
-### 1. Idea Capture Template
+### 1. First Principles Idea Capture Template
 
 **Use this format when you have an idea:**
 
 ```
 IDEA: [One sentence description]
-PROBLEM: [What specific problem does this solve?]
-USER: [Who benefits from this?]
-IMPACT: [High/Medium/Low - how much does this differentiate DMPS?]
-EFFORT: [High/Medium/Low - implementation complexity]
+FUNDAMENTAL PROBLEM: [What basic human/user need does this serve?]
+EVIDENCE: [What concrete proof shows this problem exists?]
+SIMPLEST SOLUTION: [What's the most basic way to solve this?]
+ASSUMPTIONS: [What are we assuming that might not be true?]
+VALUE PROOF: [How will we measure if this actually helps users?]
+OPPORTUNITY COST: [What are we NOT building to build this?]
 EXAMPLE: [Concrete example of how it would work]
 ```
+
+**First Principles Validation Questions:**
+1. Would this matter if we were starting from scratch?
+2. What would have to be true for this to be essential?
+3. If we had 10x fewer resources, would we still build this?
+4. What's the simplest test to validate this assumption?
 
 ### 2. Enhancement Categories
 
@@ -43,11 +51,12 @@ EXAMPLE: [Concrete example of how it would work]
 
 ### 3. Implementation Process
 
-#### Step 1: Idea Validation
-1. Fill out the Idea Capture Template
-2. Assess market need and differentiation potential
-3. Check technical feasibility
-4. Estimate implementation effort
+#### Step 1: First Principles Validation
+1. Fill out the First Principles Idea Capture Template
+2. Apply the "5 Whys" test to understand fundamental need
+3. Use the "Alien Test" - explain to someone with no context
+4. Apply the "10x Constraint Test" - what would you build with 10x fewer resources?
+5. Check against First Principles Red Flags (see FIRST_PRINCIPLES_FOUNDATION.md)
 
 #### Step 2: Feature Design
 1. Create user stories
