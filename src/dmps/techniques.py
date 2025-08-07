@@ -1,104 +1,123 @@
 """
-Optimization techniques for prompt enhancement.
+4-D optimization techniques implementation.
 """
 
-from typing import List, Dict, Any
-from .schema import OptimizationRequest
+import re
+from typing import Dict, List
 
 
 class OptimizationTechniques:
-    """Collection of optimization techniques"""
+    """Implementation of 4-D optimization techniques"""
     
-    ROLE_ASSIGNMENTS = {
-        "creative": "You are an expert creative writer and storyteller with years of experience crafting engaging narratives",
-        "technical": "You are a senior software engineer and technical architect with deep expertise in best practices",
-        "educational": "You are an experienced educator and learning specialist skilled at explaining complex concepts",
-        "complex": "You are a strategic analyst and systems thinking expert with strong analytical capabilities",
-        "general": "You are a helpful AI assistant with expertise across multiple domains"
-    }
-    
-    TECHNIQUE_MAPPINGS = {
-        "creative": ["role_assignment", "tone_emphasis", "structure_guidance", "creative_constraints"],
-        "technical": ["role_assignment", "precision_focus", "step_by_step", "constraint_based"],
-        "educational": ["role_assignment", "clear_structure", "examples_included", "scaffolding"],
-        "complex": ["role_assignment", "systematic_framework", "chain_of_thought", "decomposition"],
-        "general": ["role_assignment", "clear_structure", "context_enhancement"]
-    }
-    
-    @classmethod
-    def generate_role(cls, intent: str) -> str:
-        """Generate appropriate role assignment"""
-        return cls.ROLE_ASSIGNMENTS.get(intent, cls.ROLE_ASSIGNMENTS["general"])
-    
-    @classmethod
-    def enhance_context(cls, request: OptimizationRequest) -> str:
-        """Add missing context based on identified gaps"""
-        context_additions = []
+    def develop_clarity(self, prompt: str, intent: str) -> str:
+        """Develop: Enhance clarity and specificity"""
+        enhanced = prompt
         
-        for gap in request.missing_info:
-            if gap == "audience":
-                context_additions.append("Please specify your target audience and their expertise level.")
-            elif gap == "output_format":
-                context_additions.append("Please specify the desired output format (e.g., list, paragraph, structured data).")
-            elif gap == "constraints":
-                context_additions.append("Consider any length, style, or other constraints for the output.")
-            elif gap == "technical_context":
-                context_additions.append("Please specify the programming language, framework, or technical environment.")
-            elif gap == "creative_context":
-                context_additions.append("Please specify the desired tone, style, genre, or creative direction.")
-            elif gap == "educational_context":
-                context_additions.append("Please specify the learning level and background knowledge assumed.")
-            elif gap == "genre":
-                context_additions.append("Please specify the desired genre or creative style.")
+        # Add context markers based on intent
+        if intent == "technical":
+            if not re.search(r"context|background|requirements", enhanced, re.IGNORECASE):
+                enhanced = f"Context: {enhanced}"
         
-        return "\n".join(context_additions) if context_additions else ""
-    
-    @classmethod
-    def build_structure_guidance(cls, intent: str) -> str:
-        """Build structure guidance based on intent"""
-        structures = {
-            "creative": "Structure your response with: 1) Setting/Context, 2) Character Development, 3) Plot Progression, 4) Resolution/Conclusion",
-            "technical": "Structure your response with: 1) Problem Analysis, 2) Solution Approach, 3) Implementation Details, 4) Testing/Validation",
-            "educational": "Structure your response with: 1) Learning Objectives, 2) Core Concepts, 3) Examples/Applications, 4) Summary/Review",
-            "complex": "Structure your response with: 1) Problem Decomposition, 2) Analysis Framework, 3) Key Insights, 4) Recommendations",
-            "general": "Structure your response with clear sections and logical flow"
+        # Enhance vague terms
+        vague_replacements = {
+            r"\bsomething\b": "a specific item",
+            r"\banything\b": "any relevant information",
+            r"\bstuff\b": "relevant details",
+            r"\bthings\b": "specific elements"
         }
         
-        return structures.get(intent, structures["general"])
-    
-    @classmethod
-    def format_constraints(cls, constraints: List[str]) -> str:
-        """Format constraints into clear instructions"""
-        if not constraints:
-            return ""
+        for pattern, replacement in vague_replacements.items():
+            enhanced = re.sub(pattern, replacement, enhanced, flags=re.IGNORECASE)
         
-        formatted = "Please adhere to these constraints:\n"
-        for constraint in constraints:
-            formatted += f"- {constraint}\n"
+        # Add specificity markers
+        if len(enhanced.split()) < 10:
+            enhanced += " Please provide detailed information."
         
-        return formatted.strip()
+        return enhanced
     
-    @classmethod
-    def get_techniques_for_intent(cls, intent: str) -> List[str]:
-        """Get applicable techniques for a given intent"""
-        return cls.TECHNIQUE_MAPPINGS.get(intent, cls.TECHNIQUE_MAPPINGS["general"])
+    def design_structure(self, prompt: str, platform: str, intent: str) -> str:
+        """Design: Structure for target platform"""
+        structured = prompt
+        
+        # Platform-specific optimizations
+        platform_templates = {
+            "claude": {
+                "prefix": "Human: ",
+                "structure": "Please {action}. Be thorough and accurate.",
+                "suffix": ""
+            },
+            "chatgpt": {
+                "prefix": "",
+                "structure": "Act as an expert. {action}",
+                "suffix": "Provide a comprehensive response."
+            },
+            "gemini": {
+                "prefix": "",
+                "structure": "{action}",
+                "suffix": "Be precise and helpful."
+            },
+            "generic": {
+                "prefix": "",
+                "structure": "{action}",
+                "suffix": ""
+            }
+        }
+        
+        template = platform_templates.get(platform, platform_templates["generic"])
+        
+        # Apply platform structure if prompt is simple
+        if len(structured.split()) < 15:
+            action = structured.lower().strip()
+            if template["structure"] and "{action}" in template["structure"]:
+                structured = template["structure"].format(action=action)
+            
+            if template["prefix"]:
+                structured = template["prefix"] + structured
+            
+            if template["suffix"]:
+                structured += " " + template["suffix"]
+        
+        # Intent-specific structuring
+        if intent == "technical":
+            if not structured.startswith(("Please", "Can you", "How")):
+                structured = f"Please {structured.lower()}"
+        
+        return structured
     
-    @classmethod
-    def apply_technique(cls, technique: str, request: OptimizationRequest) -> str:
-        """Apply a specific optimization technique"""
-        if technique == "role_assignment":
-            return cls.generate_role(request.intent)
-        elif technique == "context_enhancement":
-            return cls.enhance_context(request)
-        elif technique == "structure_guidance":
-            return cls.build_structure_guidance(request.intent)
-        elif technique == "constraint_based":
-            return cls.format_constraints(request.constraints)
-        elif technique == "chain_of_thought":
-            return "Think through this step-by-step, showing your reasoning process."
-        elif technique == "examples_included":
-            return "Include relevant examples to illustrate your points."
-        elif technique == "precision_focus":
-            return "Be specific and precise in your response, avoiding vague generalizations."
-        else:
-            return ""
+    def deliver_format(self, prompt: str, output_type: str) -> str:
+        """Deliver: Final formatting and validation"""
+        formatted = prompt
+        
+        # Output type specific formatting
+        format_instructions = {
+            "list": "Please format your response as a numbered or bulleted list.",
+            "explanation": "Please provide a clear, step-by-step explanation.",
+            "code": "Please provide code examples with comments and explanations.",
+            "creative": "Please be creative and engaging in your response.",
+            "general": "Please provide a comprehensive and well-structured response."
+        }
+        
+        instruction = format_instructions.get(output_type, format_instructions["general"])
+        
+        # Add formatting instruction if not already present
+        if not re.search(r"format|structure|organize", formatted, re.IGNORECASE):
+            formatted += f" {instruction}"
+        
+        # Ensure proper punctuation
+        if not formatted.endswith(('.', '!', '?')):
+            formatted += '.'
+        
+        # Clean up extra spaces
+        formatted = re.sub(r'\s+', ' ', formatted).strip()
+        
+        return formatted
+    
+    def get_technique_description(self, technique: str) -> str:
+        """Get description of optimization technique"""
+        descriptions = {
+            "develop_clarity": "Enhanced clarity and specificity by replacing vague terms and adding context",
+            "design_structure": "Optimized structure for target platform and intent",
+            "deliver_format": "Applied final formatting and output type optimization"
+        }
+        
+        return descriptions.get(technique, "Applied optimization technique")

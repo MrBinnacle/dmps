@@ -1,145 +1,93 @@
 """
-Output formatters for different presentation modes.
+Output formatters for conversational and structured modes.
 """
 
 import json
-from typing import List, Dict, Any
-from .schema import OptimizationRequest, OptimizedResult
+from typing import Dict, Any
+from .schema import OptimizedResult, OptimizationRequest
 
 
 class ConversationalFormatter:
-    """Formats output for human-readable conversational mode"""
+    """Formats output in conversational style"""
     
-    @classmethod
-    def format(cls, optimization_data: Dict[str, Any], request: OptimizationRequest, optimized_prompt: str) -> OptimizedResult:
-        """Format for conversational output"""
-        improvements = cls._generate_improvements_list(
-            optimization_data["techniques_applied"], 
-            request.missing_info
-        )
+    def format(self, optimization_data: Dict[str, Any], 
+               request: OptimizationRequest, 
+               optimized_prompt: str) -> OptimizedResult:
+        """Format optimization result conversationally"""
         
-        formatted_output = f"""**Your Optimized Prompt:**
-
-{optimized_prompt}
-
-**What Changed:**
-{cls._format_improvements(improvements)}
-
-**Optimization Applied:**
-- Intent detected: {request.intent.title()}
-- Techniques used: {', '.join(optimization_data['techniques_applied'])}
-- Missing elements addressed: {', '.join(request.missing_info) if request.missing_info else 'None'}
-
-**Platform Notes:**
-This prompt is optimized for {request.platform}. For best results, copy the entire optimized prompt above."""
-
+        # Create conversational explanation
+        explanation_parts = []
+        
+        if optimization_data.get("improvements"):
+            explanation_parts.append("I've optimized your prompt with the following improvements:")
+            for improvement in optimization_data["improvements"]:
+                explanation_parts.append(f"• {improvement}")
+            explanation_parts.append("")
+        
+        explanation_parts.append("**Optimized Prompt:**")
+        explanation_parts.append(optimized_prompt)
+        
+        if request.missing_info:
+            explanation_parts.append("")
+            explanation_parts.append("**Suggestions for further improvement:**")
+            for suggestion in request.missing_info:
+                explanation_parts.append(f"• {suggestion}")
+        
+        formatted_output = "\n".join(explanation_parts)
+        
         return OptimizedResult(
             optimized_prompt=formatted_output,
-            improvements=improvements,
+            improvements=optimization_data.get("improvements", []),
             methodology_applied="4-D Conversational",
             metadata={
-                "interactive": True,
+                "original_length": len(request.raw_input),
+                "optimized_length": len(optimized_prompt),
                 "intent": request.intent,
-                "techniques_count": len(optimization_data["techniques_applied"])
+                "platform": request.platform,
+                "techniques_used": optimization_data.get("techniques_applied", [])
             },
             format_type="conversational"
         )
-    
-    @classmethod
-    def _generate_improvements_list(cls, techniques: List[str], missing_info: List[str]) -> List[str]:
-        """Generate human-readable improvements list"""
-        improvements = []
-        
-        technique_descriptions = {
-            "role_assignment": "Added expert role to establish authority and context",
-            "precision_focus": "Enhanced specificity and clarity of requirements",
-            "chain_of_thought": "Added step-by-step reasoning structure",
-            "clear_structure": "Organized content with logical flow and sections",
-            "context_enhancement": "Provided additional context for better understanding",
-            "creative_constraints": "Added creative parameters for better storytelling",
-            "technical_specifics": "Included technical implementation details",
-            "examples_included": "Added relevant examples for clarity",
-            "scaffolding": "Provided learning support structure"
-        }
-        
-        for technique in techniques:
-            if technique in technique_descriptions:
-                improvements.append(technique_descriptions[technique])
-        
-        # Add improvements for addressed gaps
-        gap_descriptions = {
-            "audience": "Clarified target audience and expertise level",
-            "output_format": "Specified desired output format and structure",
-            "constraints": "Added length and style constraints",
-            "technical_context": "Included technical environment details",
-            "creative_context": "Added creative direction and tone guidance",
-            "educational_context": "Specified learning level and prerequisites"
-        }
-        
-        for gap in missing_info:
-            if gap in gap_descriptions:
-                improvements.append(gap_descriptions[gap])
-        
-        return improvements
-    
-    @classmethod
-    def _format_improvements(cls, improvements: List[str]) -> str:
-        """Format improvements as bulleted list"""
-        if not improvements:
-            return "• No specific improvements needed - your prompt was already well-structured!"
-        
-        return "\n".join(f"• {improvement}" for improvement in improvements)
 
 
 class StructuredFormatter:
-    """Formats output for JSON/API structured mode"""
+    """Formats output in structured JSON style"""
     
-    @classmethod
-    def format(cls, optimization_data: Dict[str, Any], request: OptimizationRequest, optimized_prompt: str) -> OptimizedResult:
-        """Format for structured JSON output"""
-        metadata = {
-            "original_length": len(request.raw_input),
-            "optimized_length": len(optimized_prompt),
-            "intent_detected": request.intent,
-            "techniques_applied": optimization_data["techniques_applied"],
-            "gaps_identified": request.missing_info,
-            "constraints_found": request.constraints,
-            "platform_target": request.platform,
-            "confidence_score": cls._calculate_confidence(optimization_data),
-            "optimization_ratio": len(optimized_prompt) / len(request.raw_input) if request.raw_input else 1.0
-        }
+    def format(self, optimization_data: Dict[str, Any], 
+               request: OptimizationRequest, 
+               optimized_prompt: str) -> OptimizedResult:
+        """Format optimization result as structured data"""
         
         structured_output = {
-            "status": "success",
-            "original_prompt": request.raw_input,
-            "optimized_prompt": optimized_prompt,
-            "analysis": {
-                "intent": request.intent,
-                "output_type": request.output_type,
-                "missing_elements": request.missing_info,
-                "constraints": request.constraints
-            },
-            "optimization": {
-                "techniques_used": optimization_data["techniques_applied"],
-                "improvements_made": len(optimization_data["techniques_applied"]),
-                "methodology": "4-D Framework (Deconstruct, Develop, Design, Deliver)"
-            },
-            "metadata": metadata
+            "optimization_result": {
+                "original_prompt": request.raw_input,
+                "optimized_prompt": optimized_prompt,
+                "intent_detected": request.intent,
+                "target_platform": request.platform,
+                "improvements_applied": optimization_data.get("improvements", []),
+                "techniques_used": optimization_data.get("techniques_applied", []),
+                "analysis": {
+                    "original_length": len(request.raw_input),
+                    "optimized_length": len(optimized_prompt),
+                    "word_count_original": len(request.raw_input.split()),
+                    "word_count_optimized": len(optimized_prompt.split()),
+                    "constraints_identified": request.constraints,
+                    "missing_information": request.missing_info
+                },
+                "metadata": {
+                    "methodology": "4-D Optimization",
+                    "version": "1.0",
+                    "components_analyzed": optimization_data.get("components", {})
+                }
+            }
         }
         
+        formatted_json = json.dumps(structured_output, indent=2, ensure_ascii=False)
+        
         return OptimizedResult(
-            optimized_prompt=json.dumps(structured_output, indent=2),
-            improvements=optimization_data["techniques_applied"],
+            optimized_prompt=formatted_json,
+            improvements=optimization_data.get("improvements", []),
             methodology_applied="4-D Structured",
-            metadata=metadata,
+            metadata=structured_output["optimization_result"]["metadata"],
             format_type="structured"
         )
-    
-    @classmethod
-    def _calculate_confidence(cls, optimization_data: Dict[str, Any]) -> float:
-        """Calculate optimization confidence score"""
-        base_score = 0.7
-        technique_bonus = len(optimization_data["techniques_applied"]) * 0.05
-        
-        # Cap at 0.95 to indicate there's always room for improvement
-        return min(0.95, base_score + technique_bonus)
