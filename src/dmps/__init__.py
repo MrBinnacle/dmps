@@ -24,7 +24,7 @@ from .schema import OptimizationRequest, OptimizedResult, ValidationResult
 from .techniques import OptimizationTechniques
 from .validation import InputValidator
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "MrBinnacle"
 __email__ = "your.email@example.com"
 __description__ = "Dual-Mode Prompt System for AI prompt optimization"

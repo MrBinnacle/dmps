@@ -35,7 +35,9 @@ class OptimizationEngine:
         # Analyze prompt structure
         expected_format = self._determine_expected_output_format(prompt_input)
         user_constraints = self._extract_user_constraints(prompt_input)
-        missing_info: List[str] = self._identify_missing_info(prompt_input, detected_intent)
+        missing_info: List[str] = self._identify_missing_info(
+            prompt_input, detected_intent
+        )
 
         return OptimizationRequest(
             raw_input=prompt_input,

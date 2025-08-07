@@ -35,7 +35,7 @@ class ObservabilityDashboard:
 
         # Alerts
         if trend.get("trend") == "declining":
-            change_val = trend.get('change', 0)
+            change_val = trend.get("change", 0)
             print(f"\nALERT: Performance declining (change: {change_val:.3f})")
 
         print("=" * 60)

@@ -182,7 +182,7 @@ class DMPSShell:
 
             # Maintain history size limit
             if len(self.history) > self.max_history:
-                self.history = self.history[-self.max_history:]
+                self.history = self.history[-self.max_history :]
 
             # Show warnings if any
             if validation.warnings:

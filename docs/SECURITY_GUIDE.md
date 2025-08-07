@@ -1,148 +1,182 @@
 # DMPS Security Guide
 
-## 🛡️ Security Features Overview
+## Overview
 
-DMPS implements comprehensive security measures to protect against common vulnerabilities and ensure safe operation.
+DMPS v0.2.0 implements enterprise-grade security controls to protect against common vulnerabilities and ensure safe operation in production environments.
 
-## 🔒 Built-in Security Protections
+## Security Features
 
 ### Path Traversal Protection (CWE-22)
-DMPS automatically blocks dangerous file paths:
+- **Automatic validation** of all file paths before operations
+- **Blocked patterns**: `../`, `..\\`, absolute paths outside working directory
+- **Safe extensions**: Only `.txt` and `.json` files allowed for output
+- **Resolution validation**: Paths validated both before and after resolution
 
-```python
-# ❌ These are automatically blocked
-dmps --file "../../../etc/passwd"
-dmps --output "/root/.ssh/id_rsa"
-
-# ✅ These are safe and allowed
-dmps --file "my_prompts.txt"
-dmps --output "results/output.json"
-```
-
-**What's Protected:**
-- Directory traversal attempts (`../`, `..\\`)
-- Access to system directories (`/etc/`, `C:\Windows`)
-- Absolute paths outside project directory
-
-### Input Validation & Sanitization
-All user input is automatically validated and sanitized:
-
-```python
-from dmps import optimize_prompt
-
-# Malicious input is automatically detected and sanitized
-result = optimize_prompt("<script>alert('xss')</script>Write a story")
-# Script tags are removed, warnings are generated
-```
-
-**Protected Against:**
-- XSS attacks (script injection)
-- Code injection (eval, exec, __import__)
-- Path traversal in prompts
-- Excessive input length (DoS prevention)
+### Input Sanitization
+- **XSS prevention**: HTML/script tag removal
+- **Code injection protection**: Dangerous function call blocking
+- **Path sequence removal**: Automatic cleanup of traversal attempts
+- **Character filtering**: Control character and null byte removal
 
 ### Role-Based Access Control (RBAC)
-Commands are restricted based on user roles:
+- **Command authorization**: All commands validated against user roles
+- **File operation control**: Read/write permissions enforced
+- **Platform access**: Restricted platform-specific operations
+- **Session management**: Secure session handling with timeouts
 
+### Rate Limiting & DoS Protection
+- **Request limits**: Maximum requests per session
+- **Session timeouts**: Automatic session expiration (30 minutes)
+- **History limits**: Bounded memory usage
+- **File size limits**: Maximum file size enforcement
+
+### Secure Error Handling
+- **Information leak prevention**: Generic error messages for users
+- **Detailed logging**: Complete audit trail for administrators
+- **Error sanitization**: Sensitive data removal from error messages
+- **Graceful degradation**: Fallback mechanisms for failures
+
+## Security Configuration
+
+### Default Security Settings
 ```python
-# USER role permissions:
-# ✅ Read files, execute commands, modify settings
-# ❌ Write files (admin only)
-
-# Only whitelisted commands are allowed:
-# ✅ help, settings, set, history, clear, version
-# ❌ rm, del, exec, eval, import
+class SecurityConfig:
+    MAX_INPUT_LENGTH = 10000
+    MAX_FILE_SIZE = 1024 * 1024  # 1MB
+    MAX_HISTORY_SIZE = 100
+    MAX_REQUESTS_PER_SESSION = 1000
+    MAX_LINES = 1000
+    
+    # Blocked file patterns
+    DANGEROUS_PATTERNS = [
+        r'\.\.[/\\]',  # Path traversal
+        r'[<>:"|?*]',  # Invalid filename chars
+        r'^[/\\]',     # Absolute paths
+    ]
 ```
 
-## 🚨 Security Monitoring
-
-### Automatic Threat Detection
-DMPS continuously monitors for security threats:
-
-```bash
-# Security events are logged automatically
-tail -f dmps_errors.log | grep SECURITY
-```
-
-### Rate Limiting
-Built-in protection against abuse:
-- Maximum 1,000 requests per REPL session
-- Maximum 100 items in history
-- Automatic cleanup of old data
-
-## 🔧 Security Configuration
-
-### File Operation Limits
+### Custom Security Configuration
 ```python
-# Configurable security limits
-MAX_FILE_SIZE = 1MB        # Maximum file size for reading
-MAX_INPUT_LENGTH = 10,000  # Maximum prompt length
-MAX_LINES = 100           # Maximum lines in input
+from dmps.security import SecurityConfig
+
+# Override default limits
+SecurityConfig.MAX_INPUT_LENGTH = 5000
+SecurityConfig.MAX_FILE_SIZE = 512 * 1024  # 512KB
+
+# Add custom validation patterns
+SecurityConfig.add_dangerous_pattern(r'custom_pattern')
 ```
 
-### Allowed File Extensions
-Only safe file types are permitted for save operations:
-```python
-ALLOWED_EXTENSIONS = {'.json', '.txt'}  # Only these extensions allowed
-```
+## Threat Model
 
-## 📋 Security Best Practices
+### Mitigated Threats
+1. **Path Traversal (CWE-22)**: File system access outside intended directories
+2. **Code Injection**: Execution of malicious code through input
+3. **XSS Attacks**: Cross-site scripting through prompt content
+4. **DoS Attacks**: Resource exhaustion through excessive requests
+5. **Information Disclosure**: Sensitive data exposure through errors
+6. **Privilege Escalation**: Unauthorized command execution
 
-### For Users
-1. **Use Relative Paths**: Always use paths within your project directory
-2. **Validate Input**: Be aware that all inputs are automatically sanitized
-3. **Monitor Logs**: Check `dmps_errors.log` for security events
-4. **Update Regularly**: Keep DMPS updated for latest security patches
+### Security Boundaries
+- **File System**: Restricted to working directory and subdirectories
+- **Command Execution**: No system command execution allowed
+- **Network Access**: No external network connections
+- **Memory Usage**: Bounded through size limits and timeouts
+
+## Security Best Practices
 
 ### For Developers
-1. **Input Validation**: All user inputs go through `InputValidator`
-2. **Path Checking**: Use `SecurityConfig.is_safe_path()` for file operations
-3. **Error Handling**: Use `SecureErrorHandler` to prevent information leaks
-4. **RBAC**: Check permissions with `AccessControl.validate_file_operation()`
+```python
+# Always validate user input
+from dmps.validation import InputValidator
 
-## 🔍 Security Testing
+validator = InputValidator()
+result = validator.validate_input(user_input, mode)
+if not result.is_valid:
+    handle_validation_errors(result.errors)
 
-### Manual Security Tests
-```bash
-# Test path traversal protection
-python -c "from dmps.security import SecurityConfig; print('Protected:', not SecurityConfig.is_safe_path('../../../etc/passwd'))"
+# Use secure file operations
+from dmps.security import SecurityConfig
 
-# Test XSS detection
-python -c "from dmps.validation import InputValidator; v = InputValidator(); r = v.validate_input('<script>alert(1)</script>'); print('Detected:', bool(r.warnings))"
+if SecurityConfig.validate_file_path(filepath):
+    # Safe to proceed with file operation
+    process_file(filepath)
 ```
 
-### Automated Security Scans
-DMPS includes automated security scanning:
-- **Bandit**: Static security analysis
-- **Safety**: Dependency vulnerability scanning
-- **Semgrep**: Advanced security pattern detection
+### For Administrators
+- **Monitor audit logs** for security events
+- **Set appropriate limits** based on usage patterns
+- **Regular security updates** and dependency scanning
+- **Network isolation** in production environments
 
-## 🚨 Incident Response
+### For Users
+- **Validate file paths** before using CLI file operations
+- **Use relative paths** instead of absolute paths
+- **Limit input size** to reasonable lengths
+- **Report security issues** through proper channels
 
-### If You Suspect a Security Issue
-1. **Stop using the affected feature immediately**
-2. **Check logs**: `dmps_errors.log` for security events
-3. **Report the issue**: Create a GitHub issue with details
-4. **Update DMPS**: Ensure you're using the latest version
+## Audit Logging
 
-### Security Event Types
-- `SECURITY VIOLATION`: Blocked malicious input
-- `Path traversal blocked`: Dangerous file path detected
-- `Access denied`: RBAC permission violation
-- `Rate limit exceeded`: Too many requests detected
+### Security Events Logged
+- Path traversal attempts
+- Invalid command executions
+- Rate limit violations
+- Authentication failures
+- File operation denials
+- Session timeouts
 
-## 📞 Security Contact
+### Log Format
+```json
+{
+  "timestamp": "2025-01-07T10:30:00Z",
+  "session_id": "abc123",
+  "event_type": "path_traversal_blocked",
+  "details": {
+    "attempted_path": "../../../etc/passwd",
+    "user_input": "sanitized_input"
+  }
+}
+```
 
-For security vulnerabilities:
-- **Email**: security@dmps-project.com
-- **GitHub**: Create a private security advisory
-- **Response Time**: 24-48 hours for critical issues
+## Incident Response
 
-## 🔄 Security Updates
+### Security Event Detection
+1. **Automated monitoring** of audit logs
+2. **Alert thresholds** for suspicious activity
+3. **Real-time notifications** for critical events
 
-DMPS automatically checks for security updates:
-- Daily security scans via CI/CD
-- Automatic dependency vulnerability checks
-- Regular security audits and penetration testing
+### Response Procedures
+1. **Immediate containment** - Block malicious sessions
+2. **Investigation** - Analyze attack patterns
+3. **Remediation** - Apply security patches
+4. **Documentation** - Update security measures
 
-Stay secure with DMPS! 🛡️
+## Compliance
+
+### Standards Alignment
+- **OWASP Top 10**: Protection against common web vulnerabilities
+- **CWE/SANS Top 25**: Mitigation of dangerous software errors
+- **NIST Cybersecurity Framework**: Comprehensive security controls
+
+### Security Testing
+- **Static analysis**: Bandit security scanning
+- **Dependency scanning**: Safety vulnerability checks
+- **Penetration testing**: Regular security assessments
+- **Code review**: Security-focused code reviews
+
+## Reporting Security Issues
+
+### Responsible Disclosure
+- **Email**: security@dmps-project.org
+- **Encryption**: PGP key available on request
+- **Response time**: 48 hours for acknowledgment
+- **Disclosure timeline**: 90 days for public disclosure
+
+### Bug Bounty
+Security researchers are encouraged to report vulnerabilities through our responsible disclosure program.
+
+---
+
+**Last Updated**: January 7, 2025  
+**Version**: 0.2.0  
+**Security Level**: Enterprise Grade
