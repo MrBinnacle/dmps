@@ -47,14 +47,14 @@ class OptimizationTechniques:
 
     def design_structure(self, prompt: str, platform: str, intent: str) -> str:
         """Step 2: Design structure optimized for target AI platform"""
-        from .rbac import AccessControl, Role
+        from .rbac import AccessControl
 
         # Strict platform validation with authorization check
         if platform not in self.ALLOWED_PLATFORMS:
             raise ValueError(f"Invalid platform: {platform}")
 
         # Authorization check for platform access
-        if not AccessControl.validate_platform_access(Role.USER, platform):
+        if not AccessControl.validate_platform_access(platform):
             raise PermissionError(f"Access denied for platform: {platform}")
 
         structured_prompt = prompt
@@ -130,7 +130,9 @@ class OptimizationTechniques:
             formatted_prompt += "."
 
         # Clean whitespace
-        formatted_prompt = self._WHITESPACE_CLEANER.sub(" ", formatted_prompt).strip()
+        formatted_prompt = (
+            self._WHITESPACE_CLEANER.sub(" ", formatted_prompt)
+        ).strip()
 
         return formatted_prompt
 

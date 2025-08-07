@@ -92,7 +92,7 @@ class DMPSShell:
 
         # Validate user role and command authorization
         # Validate user role and command authorization
-        if not AccessControl.is_command_allowed(Role.USER, command):
+        if not AccessControl.is_command_allowed(command):
             print(f"Access denied: {command}")
             return
 
@@ -112,7 +112,7 @@ class DMPSShell:
         cmd = parts[0].lower() if parts else ""
 
         # Comprehensive RBAC validation
-        if not AccessControl.validate_command_access(Role.USER, f".{cmd}"):
+        if not AccessControl.validate_command_access(f".{cmd}"):
             print(f"Access denied: {command}")
             print("Type '.help' for available commands")
             return
@@ -468,7 +468,7 @@ Examples:
             return False
 
         # RBAC validation
-        if not AccessControl.validate_command_access(Role.USER, command):
+        if not AccessControl.validate_command_access(command):
             self._log_security_event("access_denied", {"command": command})
             return False
 
