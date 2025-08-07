@@ -1,4 +1,4 @@
-""
+"""
 Tests for the main module.
 """
 import unittest

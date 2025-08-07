@@ -5,25 +5,44 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dmps"
 version = "0.1.0"
-description = "Dual-Mode Prompt System for AI prompt optimization"
+description = "Dual-Mode Prompt System for AI prompt optimization using 4-D methodology"
 authors = [{name = "MrBinnacle", email = "your.email@example.com"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"
+keywords = ["ai", "prompt", "optimization", "nlp", "chatgpt", "claude"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Linguistic"
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/dmps"
-Repository = "https://github.com/yourusername/dmps"
+Homepage = "https://github.com/MrBinnacle/dmps"
+Repository = "https://github.com/MrBinnacle/dmps"
+"Bug Tracker" = "https://github.com/MrBinnacle/dmps/issues"
+Documentation = "https://github.com/MrBinnacle/dmps#readme"
+
+[project.scripts]
+dmps = "dmps.cli:main"
+dmps-shell = "dmps.repl:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pyright>=1.1.0",
+    "black>=22.0",
+    "flake8>=4.0"
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -36,3 +55,31 @@ include = ["src"]
 extraPaths = ["src"]
 pythonVersion = "3.8"
 typeCheckingMode = "basic"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
