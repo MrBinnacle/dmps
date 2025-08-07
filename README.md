@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyPI Version](https://img.shields.io/pypi/v/dmps.svg)](https://pypi.org/project/dmps/)
+[![codecov](https://codecov.io/gh/MrBinnacle/dmps/branch/main/graph/badge.svg)](https://codecov.io/gh/MrBinnacle/dmps)
 [![Security](https://img.shields.io/badge/security-hardened-green.svg)](https://github.com/MrBinnacle/dmps/blob/main/docs/SECURITY_GUIDE.md)
 
 A secure, enterprise-grade Python package for AI prompt optimization using the 4-D methodology (Deconstruct, Develop, Design, Deliver).
