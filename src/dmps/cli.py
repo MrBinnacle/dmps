@@ -55,7 +55,7 @@ Examples:
     parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress progress messages"
     )
-    parser.add_argument("--version", action="version", version="DMPS 0.1.0")
+    parser.add_argument("--version", action="version", version="DMPS 0.2.1")
     parser.add_argument(
         "--metrics", action="store_true", help="Show context engineering metrics"
     )

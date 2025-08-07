@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dmps"
-version = "0.2.0"
+version = "0.2.1"
 description = "Dual-Mode Prompt System for AI prompt optimization using 4-D methodology"
 readme = "README.md"
 license = {text = "MIT"}
-authors = [{name = "MrBinnacle", email = "your.email@example.com"}]
+authors = [{name = "MrBinnacle", email = "noreply@dmps-project.org"}]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
