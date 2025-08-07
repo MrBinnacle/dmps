@@ -48,6 +48,8 @@ class OptimizationTechniques:
                 context_additions.append("Please specify the desired tone, style, genre, or creative direction.")
             elif gap == "educational_context":
                 context_additions.append("Please specify the learning level and background knowledge assumed.")
+            elif gap == "genre":
+                context_additions.append("Please specify the desired genre or creative style.")
         
         return "\n".join(context_additions) if context_additions else ""
     

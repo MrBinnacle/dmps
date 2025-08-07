@@ -83,7 +83,7 @@ class TestInputValidator:
     
     def test_quote_normalization(self):
         """Test quote normalization during sanitization"""
-        quote_input = "This has "smart quotes" and 'curly apostrophes'"
+        quote_input = "This has \"smart quotes\" and 'curly apostrophes'"
         result = InputValidator.validate_input(quote_input)
         
         assert result.is_valid

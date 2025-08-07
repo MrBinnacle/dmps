@@ -210,7 +210,7 @@ class DMPSShell:
     def cmd_history(self, args: List[str]):
         """Show optimization history"""
         if not self.history:
-            print("No history yet")
+            print("📝 No history yet")
             return
         
         print(f"\nHistory ({len(self.history)} items):")
@@ -316,7 +316,7 @@ class DMPSShell:
     def cmd_stats(self, args: List[str]):
         """Show usage statistics"""
         if not self.history:
-            print("No statistics yet")
+            print("📊 No statistics yet")
             return
         
         total = len(self.history)
