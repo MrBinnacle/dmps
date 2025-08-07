@@ -3,7 +3,7 @@ Tests for intent detection and gap analysis.
 """
 
 import pytest
-from dmps.intent import IntentClassifier, GapAnalyzer
+from dmps.intent import IntentClassifier
 
 
 class TestIntentClassifier:

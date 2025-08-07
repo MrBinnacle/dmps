@@ -123,8 +123,8 @@ class OptimizationEngine:
         
         for pattern in length_patterns:
             try:
-                if pattern.search(prompt):
-                    constraints.append("Length constraint found")
+                if pattern.search(safe_prompt):
+                    found_constraints.append("Length constraint found")
                     break  # Only need to find one
             except re.error:
                 continue
@@ -136,7 +136,7 @@ class OptimizationEngine:
         except re.error:
             pass
         
-        return constraints
+        return found_constraints
     
     def _identify_missing_info(self, prompt: str, intent: str) -> List[str]:
         """Identify potentially missing information with safe regex"""
