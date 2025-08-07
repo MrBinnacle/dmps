@@ -6,7 +6,7 @@ import sys
 import json
 import time
 import hashlib
-from typing import Dict, Any, Final
+from typing import Final
 from .optimizer import PromptOptimizer
 from .security import SecurityConfig
 from .rbac import AccessControl, Role
@@ -334,9 +334,14 @@ Examples:
                 print(f"❌ Invalid file path: {filename}")
                 return
             
+            # Additional RBAC validation for save operation
+            if not AccessControl.validate_file_operation(Role.USER, "write", filename):
+                print(f"❌ Access denied for file operation: {filename}")
+                return
+            
             path = Path(filename).resolve()
             
-            # Additional validation after resolution
+            # Critical: Re-validate resolved path to prevent bypass
             if not SecurityConfig.validate_file_path(str(path)):
                 print(f"❌ Unsafe resolved path: {filename}")
                 return

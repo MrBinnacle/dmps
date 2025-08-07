@@ -6,7 +6,7 @@ DMPS CLI Implementation
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional, Final
+from typing import Optional
 from .optimizer import PromptOptimizer
 from .security import SecurityConfig
 
@@ -68,11 +68,15 @@ def read_file_content(filepath: str) -> str:
         if not AccessControl.validate_file_operation(Role.USER, "read", filepath):
             raise PermissionError("File access denied")
         
+        # Validate against path traversal attacks BEFORE resolution
+        if not SecurityConfig.validate_file_path(filepath):
+            raise PermissionError(f"Unsafe file path: {filepath}")
+        
         path = Path(filepath).resolve()
         
-        # Validate against path traversal attacks
+        # Additional validation after resolution
         if not SecurityConfig.validate_file_path(str(path)):
-            raise PermissionError(f"Unsafe file path: {filepath}")
+            raise PermissionError(f"Resolved path unsafe: {filepath}")
         
         if not path.exists():
             raise FileNotFoundError(f"File not found: {filepath}")
@@ -105,7 +109,16 @@ def write_output(content: str, output_file: Optional[str] = None,
             if not AccessControl.validate_file_operation(Role.USER, "write", output_file):
                 raise PermissionError("File write access denied")
             
+            # Validate against path traversal attacks BEFORE resolution
+            if not SecurityConfig.validate_file_path(output_file):
+                raise PermissionError(f"Unsafe output path: {output_file}")
+            
             path = Path(output_file).resolve()
+            
+            # Additional validation after resolution
+            if not SecurityConfig.validate_file_path(str(path)):
+                raise PermissionError(f"Resolved output path unsafe: {output_file}")
+            
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding='utf-8')
             if not quiet:

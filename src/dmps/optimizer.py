@@ -6,7 +6,7 @@ import json
 import uuid
 from typing import Tuple, Literal, Final
 from .schema import OptimizedResult, ValidationResult
-from .engine import OptimizationEngine
+
 from .validation import InputValidator
 from .formatters import ConversationalFormatter, StructuredFormatter
 from .token_tracker import token_tracker
@@ -113,23 +113,27 @@ class PromptOptimizer:
             return result, validation
         
         except (ValueError, TypeError, AttributeError) as e:
-            # Handle known processing errors with specific recovery
+            # Handle known processing errors with secure sanitization
             from .error_handler import error_handler
-            error_msg = error_handler.handle_error(e, "optimization_processing")
+            try:
+                sanitized_msg = error_handler.sanitize_error_message(str(e))
+            except Exception:
+                sanitized_msg = "Processing error occurred"
+            
             return self._create_fallback_result(
-                validation.sanitized_input or "", error_msg, mode
+                validation.sanitized_input or "", sanitized_msg, mode
             ), ValidationResult(
                 is_valid=False,
-                errors=[f"Optimization failed: {error_msg}"],
+                errors=[f"Optimization failed: {sanitized_msg}"],
                 warnings=["Using emergency fallback"],
                 sanitized_input=validation.sanitized_input
             )
         except ImportError as e:
             # Handle missing dependencies with proper logging
             from .error_handler import error_handler
-            error_msg = error_handler.handle_error(e, "missing_dependency")
+            error_handler.handle_error(e, "missing_dependency")
             return self._create_fallback_result(
-                validation.sanitized_input or "", error_msg, mode
+                validation.sanitized_input or "", "Missing dependency", mode
             ), ValidationResult(
                 is_valid=False,
                 errors=["Required component unavailable"],
@@ -137,11 +141,19 @@ class PromptOptimizer:
                 sanitized_input=validation.sanitized_input
             )
         except Exception as e:
-            # Handle all other unexpected errors with secure logging
+            # Handle all unexpected errors with maximum security
             from .error_handler import error_handler
-            error_msg = error_handler.handle_error(e, "optimization_unexpected")
+            try:
+                # Log for security monitoring but don't expose details
+                error_handler.handle_error(e, "optimization_unexpected")
+                # Always return generic message for unknown errors
+                safe_msg = "Internal processing error"
+            except Exception:
+                # Fallback if error handler itself fails
+                safe_msg = "System error occurred"
+            
             return self._create_fallback_result(
-                validation.sanitized_input or "", "Internal processing error", mode
+                validation.sanitized_input or "", safe_msg, mode
             ), ValidationResult(
                 is_valid=False,
                 errors=["Internal processing error occurred"],

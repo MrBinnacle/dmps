@@ -3,7 +3,7 @@ Input validation and sanitization for DMPS.
 """
 
 import re
-from typing import List, Final
+from typing import Final
 from .schema import ValidationResult
 from .security import SecurityConfig
 

@@ -3,7 +3,7 @@
 """
 
 import re
-from typing import Dict, List, Final
+from typing import Final
 
 
 class OptimizationTechniques:
@@ -45,11 +45,17 @@ class OptimizationTechniques:
     
     def design_structure(self, prompt: str, platform: str, intent: str) -> str:
         """Step 2: Design structure optimized for target AI platform"""
-        structured_prompt = prompt
+        from .rbac import AccessControl, Role
         
-        # Platform validation
+        # Strict platform validation with authorization check
         if platform not in self.ALLOWED_PLATFORMS:
-            platform = "generic"
+            raise ValueError(f"Invalid platform: {platform}")
+        
+        # Authorization check for platform access
+        if not AccessControl.validate_platform_access(Role.USER, platform):
+            raise PermissionError(f"Access denied for platform: {platform}")
+        
+        structured_prompt = prompt
         
         platform_templates = {
             "claude": {
@@ -74,19 +80,23 @@ class OptimizationTechniques:
             }
         }
         
-        platform_template = platform_templates[platform]
+        template = platform_templates[platform]
         
         # Apply platform-specific structure for simple prompts
-        if len(structured_prompt.split()) < 15:
+        word_count = len(structured_prompt.split())
+        if word_count < 15:
             user_action = structured_prompt.lower().strip()
-            if platform_template["structure"] and "{action}" in platform_template["structure"]:
-                structured_prompt = platform_template["structure"].format(action=user_action)
             
-            if platform_template["prefix"]:
-                structured_prompt = platform_template["prefix"] + structured_prompt
+            # Apply structure template
+            if template["structure"] and "{action}" in template["structure"]:
+                structured_prompt = template["structure"].format(action=user_action)
             
-            if platform_template["suffix"]:
-                structured_prompt += " " + platform_template["suffix"]
+            # Add prefix and suffix
+            if template["prefix"]:
+                structured_prompt = template["prefix"] + structured_prompt
+            
+            if template["suffix"]:
+                structured_prompt += " " + template["suffix"]
         
         # Add polite framing for technical requests
         if intent == "technical" and not structured_prompt.startswith(("Please", "Can you", "How")):
