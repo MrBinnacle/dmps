@@ -88,7 +88,7 @@ class DMPSShell:
 
     def handle_command(self, command: str):
         """Handle command with RBAC validation"""
-        from .rbac import AccessControl, Role
+        from .rbac import AccessControl
 
         # Validate user role and command authorization
         # Validate user role and command authorization
@@ -132,7 +132,7 @@ class DMPSShell:
             if len(parts) < 3:
                 print("Usage: .set <setting_name> <setting_value>")
             else:
-                self._update_configuration_setting(parts[1], parts[2])
+                self._update_configuration_setting(parts[1:3])
         elif cmd == "history":
             self._show_history()
         elif cmd == "clear":
@@ -224,7 +224,8 @@ class DMPSShell:
                 if result.improvements:
                     techniques_count = len(result.improvements)
                     print(
-                        f"Optimization complete! Applied {techniques_count} improvements.",
+                        f"Optimization complete! Applied {techniques_count} "
+                        f"improvements.",
                         file=sys.stderr,
                     )
 

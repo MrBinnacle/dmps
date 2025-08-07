@@ -122,7 +122,7 @@ class PromptOptimizer:
             from .error_handler import error_handler
 
             try:
-                sanitized_msg = error_handler.sanitize_error_message(str(e))
+                sanitized_msg = error_handler.handle_error(e)
             except Exception:
                 sanitized_msg = "Processing error occurred"
 
