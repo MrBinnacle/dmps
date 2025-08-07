@@ -5,9 +5,9 @@ Centralized type definitions for optional dependencies
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from transformers import Pipeline
-    from requests import Response
     from langchain.schema import BaseMessage
+    from requests import Response
+    from transformers import Pipeline
 else:
     Pipeline = Any
     Response = Any
@@ -18,16 +18,14 @@ else:
 class LLMPipeline(Protocol):
     """Protocol for HuggingFace pipeline interface"""
 
-    def __call__(self, text: str, **kwargs) -> list[dict[str, Any]]:
-        ...
+    def __call__(self, text: str, **kwargs) -> list[dict[str, Any]]: ...
 
 
 @runtime_checkable
 class HTTPClient(Protocol):
     """Protocol for HTTP client interface"""
 
-    def post(self, url: str, **kwargs) -> Any:
-        ...
+    def post(self, url: str, **kwargs) -> Any: ...
 
 
 # Type aliases for cleaner code

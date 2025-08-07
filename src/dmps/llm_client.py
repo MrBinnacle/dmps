@@ -3,22 +3,18 @@ LLM API client for routing requests to different providers
 """
 
 import os
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, Any, Callable
-import time
-
-if TYPE_CHECKING:
-    from langchain.chat_models import ChatOpenAI, ChatAnthropic
+from typing import Any, Callable, Dict, Optional
 
 try:
-    from langchain.chat_models import ChatOpenAI, ChatAnthropic
+    import importlib
+    import importlib.util as _importlib_util
 
-    LANGCHAIN_AVAILABLE = True
-except ImportError:
+    LANGCHAIN_AVAILABLE = _importlib_util.find_spec("langchain") is not None
+except Exception:
     LANGCHAIN_AVAILABLE = False
-    ChatOpenAI = None
-    ChatAnthropic = None
 
 
 @dataclass
@@ -114,8 +110,8 @@ class BaseLangChainClient(LLMClient):
         if client is not None:
             try:
                 # Import within guarded scope to satisfy type checkers
-                from langchain.schema import (  # type: ignore[reportMissingImports]
-                    HumanMessage as _HumanMessage,
+                from langchain.schema import (
+                    HumanMessage as _HumanMessage,  # type: ignore[reportMissingImports]
                 )
 
                 message = _HumanMessage(content=prompt)
@@ -146,6 +142,9 @@ class OpenAIClient(BaseLangChainClient):
         super().__init__(api_key, "OPENAI_API_KEY", model, 0.002)
 
     def _create_client(self) -> Callable[[list], Any]:
+        # Runtime import to avoid hard dependency at import time
+        module = importlib.import_module("langchain.chat_models")
+        ChatOpenAI = getattr(module, "ChatOpenAI")
         return ChatOpenAI(
             openai_api_key=self.api_key,
             model_name=self.model,
@@ -164,6 +163,9 @@ class AnthropicClient(BaseLangChainClient):
         super().__init__(api_key, "ANTHROPIC_API_KEY", model, 0.015)
 
     def _create_client(self) -> Callable[[list], Any]:
+        # Runtime import to avoid hard dependency at import time
+        module = importlib.import_module("langchain.chat_models")
+        ChatAnthropic = getattr(module, "ChatAnthropic")
         return ChatAnthropic(
             anthropic_api_key=self.api_key,
             model=self.model,
@@ -184,7 +186,7 @@ class LLMRouter:
     }
 
     def __init__(self):
-        self._clients: Dict[str, Optional[LLMClient]] = {}
+        self._clients: Dict[str, LLMClient] = {}
 
     def _get_or_create_client(self, client_key: str) -> LLMClient:
         """Lazy-load clients on first use"""
